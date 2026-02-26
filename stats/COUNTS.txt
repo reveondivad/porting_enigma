@@ -1,0 +1,35 @@
+File count (implementations): 620
+Distinct language identifiers (raw): 611
+Distinct programming languages (normalized): 503
+
+Top normalized languages by number of files (variants collapsed):
+vale: 13
+pony: 8
+nelua: 5
+carp: 4
+wren: 4
+a: 3
+flix: 3
+gleam: 3
+hx: 3
+idr: 3
+koka: 3
+odin: 3
+p: 3
+pkl: 3
+v: 3
+ada: 2
+agda: 2
+ahk: 2
+apl: 2
+applescript: 2
+as: 2
+asm: 2
+awk: 2
+ballerina: 2
+bf: 2
+boo: 2
+c: 2
+ceu: 2
+chapel: 2
+clean: 2
