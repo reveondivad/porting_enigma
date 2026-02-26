@@ -1,0 +1,26 @@
+EVIDENCE CHECKLIST (for Guinness submission)
+
+1) Repository snapshot
+- Public GitHub repo URL
+- Tagged release for the submission version (e.g., v1.0-record-submission)
+
+2) Record proposal documents
+- docs/RECORD_PROPOSAL.txt
+- docs/TEST_VECTORS.txt
+- stats/COUNTS.txt
+- evidence/MANIFEST.csv
+
+3) Demonstration video (recommended)
+- Show repository structure
+- Show counts file
+- Run Python reference to show expected outputs
+- Run 5-10 representative languages from different paradigms
+
+4) Independent witness statement (recommended)
+- Witness confirms:
+  - the method used to count distinct programming languages
+  - that MANIFEST.csv and COUNTS.txt were generated from repository content
+  - that test vectors are fixed and published
+
+5) Optional: third-party verification
+- A second person re-runs the manifest generator and confirms identical counts
