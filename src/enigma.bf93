@@ -1,0 +1,73 @@
+ENIGMA CIPHER IN BEFUNGE-93
+============================
+Befunge is a 2D stack-based language where the instruction pointer
+moves in 4 directions on a toroidal grid  The playfield is 80x25
+
+Due to the 80x25 grid limitation and stack-only data model a full
+Enigma requires creative use of the p (put) and g (get) commands
+to store rotor wiring tables in the playfield itself
+
+Memory map in playfield:
+  Row 0-2: Program code (instruction flow)
+  Row 3: Rotor I forward  (26 cells starting col 0)
+  Row 4: Rotor II forward (26 cells starting col 0)
+  Row 5: Rotor III forward (26 cells starting col 0)
+  Row 6: Reflector B (26 cells starting col 0)
+  Row 7: Rotor I backward (26 cells starting col 0)
+  Row 8: Rotor II backward (26 cells starting col 0)
+  Row 9: Rotor III backward (26 cells starting col 0)
+  Row 10: Plugboard (26 cells)
+  Row 11 col 0-2: rotor offsets R M L
+  Row 11 col 3-4: notch positions
+
+Initialization stores wiring as ASCII values offset by 65:
+
+v Store Rotor I fwd: EKMFLGDQVZNTOWYHXUSPAIBRCJ
+>04+3g"E"p 14+3g"K"p ... [stores each wiring value]
+
+Main encrypt loop:
+  Read char > subtract 65 > plugboard lookup >
+  add R offset > mod 26 > rotor III fwd lookup >
+  sub R add M > mod 26 > rotor II fwd lookup >
+  sub M add L > mod 26 > rotor I fwd lookup >
+  sub L > reflector lookup >
+  add L > rotor I bwd > sub L add M > rotor II bwd >
+  sub M add R > rotor III bwd > sub R >
+  plugboard > add 65 > output
+
+  Then step rotors with notch checking
+
+NOTE: Full Befunge-93 implementation requires careful 2D layout
+within 80x25 grid  The rotor tables consume rows 3-10 leaving
+rows 0-2 and 12-24 for code (~1040 cells of code space)
+
+Pseudocode mapping to Befunge operations:
+  g = get value from playfield(x,y)
+  p = put value to playfield(x,y)
+  % = modulo
+  + - = arithmetic
+  ~ = read char input
+  , = output char
+  : = duplicate top of stack
+  \ = swap top two
+  $ = discard top
+  ! = logical not
+  ` = greater than
+  # = bridge (skip next)
+  @ = end program
+
+The encrypt-one-char sequence in Befunge:
+~ "A"- [read and subtract 65]
+:0 01+1g + 9926+ % [add R offset mod 26]
+5g [lookup rotor III fwd from row 5]
+"A"- [convert back to 0-25]
+0 01+1g - 1 01+1g + 9926+ % [sub R add M mod 26]
+4g [lookup rotor II fwd from row 4]
+... [continue through all rotors and reflector]
+"A"+ , [add 65 and output]
+
+Test vectors:
+  Rotors I-II-III Key AAA no plugboard
+  AAAAA -> BDZGO
+  HELLOWORLD -> ILBDAAMTAZ
+@

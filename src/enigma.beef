@@ -1,0 +1,98 @@
+// Enigma Cipher - Beef
+// Systems language for game dev (built on LLVM, C#-like syntax)
+// Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+// PeopleTec Inc. - Guinness World Record Attempt 2026
+
+using System;
+
+namespace Enigma
+{
+    static int32[26][3] sFwd = .(
+        .(4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9),
+        .(0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4),
+        .(1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14)
+    );
+    static int32[26][3] sBwd = .(
+        .(20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9),
+        .(0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18),
+        .(19,0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12)
+    );
+    static int32[26] sRef = .(24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19);
+    static int32[3] sNotch = .(16, 4, 21);
+
+    static int32 Mod26(int32 n)
+    {
+        int32 m = n % 26;
+        return m < 0 ? m + 26 : m;
+    }
+
+    class EnigmaMachine
+    {
+        int32[3] mR;
+        int32[3] mO;
+        int32 mN1, mN2;
+
+        public this(int32 r0, int32 r1, int32 r2, int32 k0, int32 k1, int32 k2)
+        {
+            mR = .(r0, r1, r2);
+            mO = .(k0, k1, k2);
+            mN1 = sNotch[r1];
+            mN2 = sNotch[r2];
+        }
+
+        void Step() mut
+        {
+            if (mO[1] == mN1)
+            {
+                mO[1] = Mod26(mO[1] + 1);
+                mO[0] = Mod26(mO[0] + 1);
+            }
+            else if (mO[2] == mN2)
+                mO[1] = Mod26(mO[1] + 1);
+            mO[2] = Mod26(mO[2] + 1);
+        }
+
+        int32 FwdPass(int32 slot, int32 idx)
+        {
+            int32 c = Mod26(idx + mO[slot]);
+            return Mod26(sFwd[mR[slot]][c] - mO[slot]);
+        }
+
+        int32 BwdPass(int32 slot, int32 idx)
+        {
+            int32 c = Mod26(idx + mO[slot]);
+            return Mod26(sBwd[mR[slot]][c] - mO[slot]);
+        }
+
+        public int32 PressKey(int32 ch) mut
+        {
+            Step();
+            var c = ch;
+            c = FwdPass(2, c); c = FwdPass(1, c); c = FwdPass(0, c);
+            c = sRef[c];
+            c = BwdPass(0, c); c = BwdPass(1, c); c = BwdPass(2, c);
+            return c;
+        }
+
+        public void Encrypt(StringView msg, String output) mut
+        {
+            for (let ch in msg.RawChars)
+            {
+                let enc = PressKey((int32)ch - 65);
+                output.Append((char8)(enc + 65));
+            }
+        }
+    }
+
+    class Program
+    {
+        static void Main()
+        {
+            Console.WriteLine("Enigma Cipher - Beef");
+            let e = scope EnigmaMachine(0,1,2,0,0,0);
+            let result = scope String();
+            e.Encrypt("AAAAA", result);
+            Console.WriteLine(scope $"Test 1: {result} expected BDZGO");
+        }
+    }
+}

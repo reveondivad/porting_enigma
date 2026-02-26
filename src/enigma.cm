@@ -1,0 +1,66 @@
+(* Enigma Cipher - Standard ML / CM (Compilation Manager)
+   Using SML/NJ with CM build system
+   Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+   PeopleTec Inc. - Guinness World Record Attempt 2026
+   Note: Distinct from enigma.sml which uses plain SML *)
+
+structure Enigma :> sig
+  val encrypt : int * int * int * int * int * int * string -> string
+  val test : unit -> unit
+end = struct
+
+  val fwdI  = Vector.fromList [4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9]
+  val fwdII = Vector.fromList [0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4]
+  val fwdIII= Vector.fromList [1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14]
+  val bwdI  = Vector.fromList [20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9]
+  val bwdII = Vector.fromList [0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18]
+  val bwdIII= Vector.fromList [19,0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12]
+  val ref   = Vector.fromList [24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19]
+  val notches = Vector.fromList [16, 4, 21]
+
+  fun mod26 n = let val m = n mod 26 in if m < 0 then m + 26 else m end
+  fun getFwd (r, i) = case r of 0 => Vector.sub(fwdI,i) | 1 => Vector.sub(fwdII,i) | _ => Vector.sub(fwdIII,i)
+  fun getBwd (r, i) = case r of 0 => Vector.sub(bwdI,i) | 1 => Vector.sub(bwdII,i) | _ => Vector.sub(bwdIII,i)
+  fun passFwd (rotor, offset, ch) = let val inp = mod26(ch+offset) in mod26(getFwd(rotor,inp)-offset) end
+  fun passBwd (rotor, offset, ch) = let val inp = mod26(ch+offset) in mod26(getBwd(rotor,inp)-offset) end
+
+  type state = {r0:int, r1:int, r2:int, o0:int ref, o1:int ref, o2:int ref, n1:int, n2:int}
+
+  fun step (s:state) =
+    if !(#o1 s) = #n1 s then
+      (#o1 s := mod26(!(#o1 s)+1); #o0 s := mod26(!(#o0 s)+1))
+    else if !(#o2 s) = #n2 s then
+      #o1 s := mod26(!(#o1 s)+1)
+    else ();
+    #o2 s := mod26(!(#o2 s)+1)
+
+  fun pressKey (s:state, ch) =
+    (step s;
+     let val c = ch
+         val c = passFwd(#r2 s, !(#o2 s), c)
+         val c = passFwd(#r1 s, !(#o1 s), c)
+         val c = passFwd(#r0 s, !(#o0 s), c)
+         val c = Vector.sub(ref, c)
+         val c = passBwd(#r0 s, !(#o0 s), c)
+         val c = passBwd(#r1 s, !(#o1 s), c)
+         val c = passBwd(#r2 s, !(#o2 s), c)
+     in c end)
+
+  fun encrypt (r0,r1,r2,k0,k1,k2,msg) =
+    let val s : state = {r0=r0,r1=r1,r2=r2,
+                         o0=ref k0,o1=ref k1,o2=ref k2,
+                         n1=Vector.sub(notches,r1),n2=Vector.sub(notches,r2)}
+    in String.implode (List.map (fn c =>
+         chr(pressKey(s, ord c - 65) + 65)) (String.explode msg))
+    end
+
+  fun test () =
+    (print "Enigma Cipher - SML/CM\n";
+     print ("Test 1: " ^ encrypt(0,1,2,0,0,0,"AAAAA") ^ "\n");
+     print ("Test 2: " ^ encrypt(0,1,2,0,0,0,"HELLOWORLD") ^ "\n");
+     print ("Test 3: " ^ encrypt(0,1,2,0,0,0,"ATTACKATDAWN") ^ "\n");
+     print ("Test 4: " ^ encrypt(0,1,2,12,2,10,"HELLOWORLD") ^ "\n");
+     print ("Test 5: " ^ encrypt(2,0,1,0,0,0,"HELLOWORLD") ^ "\n"))
+end
+
+val _ = Enigma.test()

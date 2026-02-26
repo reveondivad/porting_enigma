@@ -1,0 +1,132 @@
+/* Enigma Cipher - bc (arbitrary precision calculator language)
+   Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+   PeopleTec Inc. - Guinness World Record Attempt 2026
+   Usage: bc -l enigma.bc */
+
+/* bc arrays are 1-indexed; we use a[0..25] */
+/* Rotor I forward */
+f1[0]=4;  f1[1]=10; f1[2]=12; f1[3]=5;  f1[4]=11; f1[5]=6;
+f1[6]=3;  f1[7]=16; f1[8]=21; f1[9]=25; f1[10]=13;f1[11]=19;
+f1[12]=14;f1[13]=22;f1[14]=24;f1[15]=7; f1[16]=23;f1[17]=20;
+f1[18]=18;f1[19]=15;f1[20]=0; f1[21]=8; f1[22]=1; f1[23]=17;
+f1[24]=2; f1[25]=9;
+
+/* Rotor II forward */
+f2[0]=0;  f2[1]=9;  f2[2]=3;  f2[3]=10; f2[4]=18; f2[5]=8;
+f2[6]=17; f2[7]=20; f2[8]=23; f2[9]=1;  f2[10]=11;f2[11]=7;
+f2[12]=22;f2[13]=19;f2[14]=12;f2[15]=2; f2[16]=16;f2[17]=6;
+f2[18]=25;f2[19]=13;f2[20]=15;f2[21]=24;f2[22]=5; f2[23]=21;
+f2[24]=14;f2[25]=4;
+
+/* Rotor III forward */
+f3[0]=1;  f3[1]=3;  f3[2]=5;  f3[3]=7;  f3[4]=9;  f3[5]=11;
+f3[6]=2;  f3[7]=15; f3[8]=17; f3[9]=19; f3[10]=23;f3[11]=21;
+f3[12]=25;f3[13]=13;f3[14]=24;f3[15]=4; f3[16]=8; f3[17]=22;
+f3[18]=6; f3[19]=0; f3[20]=10;f3[21]=12;f3[22]=20;f3[23]=18;
+f3[24]=16;f3[25]=14;
+
+/* Rotor I backward */
+b1[0]=20; b1[1]=22; b1[2]=24; b1[3]=6;  b1[4]=0;  b1[5]=3;
+b1[6]=5;  b1[7]=15; b1[8]=21; b1[9]=25; b1[10]=1; b1[11]=4;
+b1[12]=2; b1[13]=10;b1[14]=12;b1[15]=19;b1[16]=7; b1[17]=23;
+b1[18]=18;b1[19]=11;b1[20]=17;b1[21]=8; b1[22]=13;b1[23]=16;
+b1[24]=14;b1[25]=9;
+
+/* Rotor II backward */
+b2[0]=0;  b2[1]=9;  b2[2]=15; b2[3]=2;  b2[4]=25; b2[5]=22;
+b2[6]=17; b2[7]=11; b2[8]=5;  b2[9]=1;  b2[10]=3; b2[11]=10;
+b2[12]=14;b2[13]=19;b2[14]=24;b2[15]=20;b2[16]=16;b2[17]=6;
+b2[18]=4; b2[19]=13;b2[20]=7; b2[21]=23;b2[22]=12;b2[23]=8;
+b2[24]=21;b2[25]=18;
+
+/* Rotor III backward */
+b3[0]=19; b3[1]=0;  b3[2]=6;  b3[3]=1;  b3[4]=15; b3[5]=2;
+b3[6]=18; b3[7]=3;  b3[8]=16; b3[9]=4;  b3[10]=20;b3[11]=5;
+b3[12]=21;b3[13]=13;b3[14]=25;b3[15]=7; b3[16]=24;b3[17]=8;
+b3[18]=23;b3[19]=9; b3[20]=22;b3[21]=11;b3[22]=17;b3[23]=10;
+b3[24]=14;b3[25]=12;
+
+/* Reflector B */
+rf[0]=24; rf[1]=17; rf[2]=20; rf[3]=7;  rf[4]=16; rf[5]=18;
+rf[6]=11; rf[7]=3;  rf[8]=15; rf[9]=23; rf[10]=13;rf[11]=6;
+rf[12]=14;rf[13]=10;rf[14]=12;rf[15]=8; rf[16]=4; rf[17]=1;
+rf[18]=5; rf[19]=25;rf[20]=2; rf[21]=22;rf[22]=21;rf[23]=9;
+rf[24]=0; rf[25]=19;
+
+/* Notches: I=16(Q), II=4(E), III=21(V) */
+nt[0]=16; nt[1]=4; nt[2]=21;
+
+/* State variables */
+o0=0; o1=0; o2=0; n1=0; n2=0; r0=0; r1=0; r2=0
+
+define mod26(n) {
+  auto m
+  m = n % 26
+  if (m < 0) m = m + 26
+  return (m)
+}
+
+define getfwd(r, i) {
+  if (r == 0) return (f1[i])
+  if (r == 1) return (f2[i])
+  return (f3[i])
+}
+
+define getbwd(r, i) {
+  if (r == 0) return (b1[i])
+  if (r == 1) return (b2[i])
+  return (b3[i])
+}
+
+define passfwd(rotor, offset, ch) {
+  auto inp, out
+  inp = mod26(ch + offset)
+  out = getfwd(rotor, inp)
+  return (mod26(out - offset))
+}
+
+define passbwd(rotor, offset, ch) {
+  auto inp, out
+  inp = mod26(ch + offset)
+  out = getbwd(rotor, inp)
+  return (mod26(out - offset))
+}
+
+define step() {
+  if (o1 == n1) {
+    o1 = mod26(o1 + 1)
+    o0 = mod26(o0 + 1)
+  } else if (o2 == n2) {
+    o1 = mod26(o1 + 1)
+  }
+  o2 = mod26(o2 + 1)
+}
+
+define presskey(ch) {
+  auto c
+  step()
+  c = ch
+  c = passfwd(r2, o2, c)
+  c = passfwd(r1, o1, c)
+  c = passfwd(r0, o0, c)
+  c = rf[c]
+  c = passbwd(r0, o0, c)
+  c = passbwd(r1, o1, c)
+  c = passbwd(r2, o2, c)
+  return (c)
+}
+
+define init(ir0, ir1, ir2, ik0, ik1, ik2) {
+  r0 = ir0; r1 = ir1; r2 = ir2
+  o0 = ik0; o1 = ik1; o2 = ik2
+  n1 = nt[r1]; n2 = nt[r2]
+}
+
+/* Test: encrypt A(0) five times with rotors 0,1,2 key 0,0,0 -> BDZGO */
+"Enigma Cipher - bc
+"
+init(0, 1, 2, 0, 0, 0)
+"Test 1 (AAAAA -> BDZGO): "
+presskey(0); presskey(0); presskey(0); presskey(0); presskey(0)
+"
+"

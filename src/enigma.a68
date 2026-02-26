@@ -1,0 +1,114 @@
+# Enigma Cipher - ALGOL 68 #
+# Historic structured programming language #
+
+BEGIN
+    # Rotor wirings forward #
+    [0:25]INT fwd i := (4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9);
+    [0:25]INT fwd ii := (0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4);
+    [0:25]INT fwd iii := (1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14);
+
+    # Rotor wirings backward #
+    [0:25]INT bwd i := (20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9);
+    [0:25]INT bwd ii := (0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18);
+    [0:25]INT bwd iii := (19,0,6,1,15,2,18,3,16,4,20,9,21,13,25,7,24,8,23,5,22,11,17,12,14,10);
+
+    [0:2]INT notches := (16, 4, 21);
+    [0:25]INT reflector := (24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19);
+
+    [0:2][0:25]INT fwd;
+    fwd[0] := fwd i; fwd[1] := fwd ii; fwd[2] := fwd iii;
+    [0:2][0:25]INT bwd;
+    bwd[0] := bwd i; bwd[1] := bwd ii; bwd[2] := bwd iii;
+
+    PROC mod26 = (INT x) INT:
+    BEGIN
+        INT m = x MOD 26;
+        IF m < 0 THEN m + 26 ELSE m FI
+    END;
+
+    PROC pass forward = (INT rotor, offset, ch) INT:
+    BEGIN
+        INT inp = mod26(ch + offset);
+        INT out = fwd[rotor][inp];
+        mod26(out - offset)
+    END;
+
+    PROC pass backward = (INT rotor, offset, ch) INT:
+    BEGIN
+        INT inp = mod26(ch + offset);
+        INT out = bwd[rotor][inp];
+        mod26(out - offset)
+    END;
+
+    PROC encrypt = (INT r0, r1, r2, k0, k1, k2, REF[]INT pb, STRING msg) STRING:
+    BEGIN
+        INT o0 := k0, o1 := k1, o2 := k2;
+        INT n = UPB msg - LWB msg + 1;
+        [1:n]CHAR result;
+        FOR i FROM LWB msg TO UPB msg DO
+            INT ch = ABS msg[i] - ABS "A";
+            # Step rotors #
+            BOOL mid = (o1 = notches[r1]);
+            BOOL at notch2 = (o2 = notches[r2]);
+            o2 := mod26(o2 + 1);
+            IF at notch2 OR mid THEN o1 := mod26(o1 + 1) FI;
+            IF mid THEN o0 := mod26(o0 + 1) FI;
+            # Encrypt #
+            INT c := pb[ch];
+            c := pass forward(r2, o2, c);
+            c := pass forward(r1, o1, c);
+            c := pass forward(r0, o0, c);
+            c := reflector[c];
+            c := pass backward(r0, o0, c);
+            c := pass backward(r1, o1, c);
+            c := pass backward(r2, o2, c);
+            c := pb[c];
+            result[i - LWB msg + 1] := REPR(c + ABS "A")
+        OD;
+        result
+    END;
+
+    PROC make plugboard = (REF[]INT pb, []INT pairs) VOID:
+    BEGIN
+        FOR i FROM 0 TO 25 DO pb[i] := i OD;
+        FOR i FROM LWB pairs BY 2 TO UPB pairs DO
+            INT a = pairs[i], b = pairs[i+1];
+            pb[a] := b;
+            pb[b] := a
+        OD
+    END;
+
+    PROC run test = (STRING label, expected, actual) VOID:
+    BEGIN
+        STRING status = IF expected = actual THEN "PASS" ELSE "FAIL" FI;
+        print((status, " ", label, ": ", actual, " (expected ", expected, ")", newline))
+    END;
+
+    print(("Enigma Cipher - ALGOL 68", newline));
+
+    [0:25]INT pb;
+
+    # Test 1 #
+    make plugboard(pb, ());
+    run test("Test 1", "BDZGO", encrypt(0,1,2, 0,0,0, pb, "AAAAA"));
+
+    # Test 2 #
+    make plugboard(pb, ());
+    run test("Test 2", "ILBDAAMTAZ", encrypt(0,1,2, 0,0,0, pb, "HELLOWORLD"));
+
+    # Test 3 #
+    make plugboard(pb, ());
+    run test("Test 3", "BZHGNOCRRTCM", encrypt(0,1,2, 0,0,0, pb, "ATTACKATDAWN"));
+
+    # Test 4 #
+    make plugboard(pb, ());
+    run test("Test 4", "DLTBBQVPQV", encrypt(0,1,2, 12,2,10, pb, "HELLOWORLD"));
+
+    # Test 5 #
+    make plugboard(pb, ());
+    run test("Test 5", "KZHDFQYHXT", encrypt(2,0,1, 0,0,0, pb, "HELLOWORLD"));
+
+    # Test 6 #
+    make plugboard(pb, (0,1, 2,3, 4,5));
+    run test("Test 6", "IKACBBMTBF", encrypt(0,1,2, 0,0,0, pb, "HELLOWORLD"))
+END

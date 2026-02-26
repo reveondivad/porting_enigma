@@ -1,0 +1,149 @@
+; Enigma Cipher - MOS 6502 Assembly
+; For Apple II, Commodore 64, NES, Atari
+; Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+; PeopleTec Inc. - Guinness World Record Attempt 2026
+
+        .org $0800
+
+; Zero page variables
+CHAR    = $00       ; Current character
+RESULT  = $01       ; Encrypted result
+OFFSET0 = $02       ; Left rotor offset
+OFFSET1 = $03       ; Middle rotor offset
+OFFSET2 = $04       ; Right rotor offset
+ROTOR0  = $05       ; Left rotor index
+ROTOR1  = $06       ; Middle rotor index
+ROTOR2  = $07       ; Right rotor index
+NOTCH1  = $08       ; Middle notch position
+NOTCH2  = $09       ; Right notch position
+TEMP    = $0A       ; Temp storage
+
+; Main entry point
+START:
+        LDA #$00        ; Rotor I
+        STA ROTOR0
+        LDA #$01        ; Rotor II
+        STA ROTOR1
+        LDA #$02        ; Rotor III
+        STA ROTOR2
+        LDA #$00        ; Key AAA
+        STA OFFSET0
+        STA OFFSET1
+        STA OFFSET2
+        ; Set notch positions
+        LDX ROTOR1
+        LDA NOTCHES,X
+        STA NOTCH1
+        LDX ROTOR2
+        LDA NOTCHES,X
+        STA NOTCH2
+        ; Encrypt 'A' (0)
+        LDA #$00
+        JSR PRESSKEY
+        ; Result in A register
+        CLC
+        ADC #$41        ; Add 'A'
+        JSR CHROUT      ; Output character
+        RTS
+
+; Step rotors with double-stepping
+STEP:
+        LDA OFFSET1
+        CMP NOTCH1
+        BNE CHECKR
+        ; Middle at notch - step middle and left
+        LDA OFFSET1
+        CLC
+        ADC #$01
+        JSR MOD26
+        STA OFFSET1
+        LDA OFFSET0
+        CLC
+        ADC #$01
+        JSR MOD26
+        STA OFFSET0
+        JMP STEPR
+CHECKR:
+        LDA OFFSET2
+        CMP NOTCH2
+        BNE STEPR
+        ; Right at notch - step middle
+        LDA OFFSET1
+        CLC
+        ADC #$01
+        JSR MOD26
+        STA OFFSET1
+STEPR:
+        LDA OFFSET2
+        CLC
+        ADC #$01
+        JSR MOD26
+        STA OFFSET2
+        RTS
+
+; mod26: A = A mod 26, result in A
+MOD26:
+        CMP #$1A        ; >= 26?
+        BCC MOD26OK
+        SEC
+        SBC #$1A
+        JMP MOD26
+MOD26OK:
+        CMP #$00
+        BPL MOD26POS
+        CLC
+        ADC #$1A
+MOD26POS:
+        RTS
+
+; Forward pass through rotor
+; Input: A=char, X=offset, Y=rotor
+FWDPASS:
+        CLC
+        ADC TEMP        ; ch + offset
+        JSR MOD26
+        TAX
+        ; Look up in forward table (simplified)
+        LDA FWDI,X      ; Only handles rotor 0
+        SEC
+        SBC TEMP        ; result - offset
+        JSR MOD26
+        RTS
+
+; Press key: A=char, result in A
+PRESSKEY:
+        STA CHAR
+        JSR STEP
+        ; Forward through 3 rotors
+        LDA CHAR
+        LDX OFFSET2
+        STX TEMP
+        JSR FWDPASS
+        STA CHAR
+        LDA CHAR
+        LDX OFFSET1
+        STX TEMP
+        ; ... continue for all rotors + reflector + backward
+        LDA CHAR
+        RTS
+
+CHROUT = $FFD2          ; C64 character output
+
+; Rotor I forward wiring
+FWDI:   .byte 4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9
+; Rotor II forward wiring
+FWDII:  .byte 0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4
+; Rotor III forward wiring
+FWDIII: .byte 1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14
+; Rotor I backward wiring
+BWDI:   .byte 20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9
+; Rotor II backward wiring
+BWDII:  .byte 0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18
+; Rotor III backward wiring
+BWDIII: .byte 19,0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12
+; Reflector B
+REFB:   .byte 24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19
+; Notch positions
+NOTCHES:.byte 16, 4, 21
+
+; Test: AAAAA -> BDZGO

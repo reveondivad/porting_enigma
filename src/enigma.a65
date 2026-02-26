@@ -1,0 +1,194 @@
+; Enigma Cipher - 6502 Assembly
+; Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+; PeopleTec Inc. - Guinness World Record Attempt 2026
+; Target: Apple II / C64 / NES / Atari 2600
+
+        .ORG $0600
+
+; ---- Zero page state ----
+OFF0    = $10      ; left offset
+OFF1    = $11      ; middle offset
+OFF2    = $12      ; right offset
+N1      = $13      ; middle notch
+N2      = $14      ; right notch
+CHAR    = $15      ; current character
+TEMP    = $16      ; temp storage
+COUNT   = $17      ; loop counter
+
+; ---- Rotor tables (page-aligned for speed) ----
+        .ORG $0700
+FWDI:   .BYTE 4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9
+FWDII:  .BYTE 0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4
+FWDIII: .BYTE 1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14
+BWDI:   .BYTE 20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9
+BWDII:  .BYTE 0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18
+BWDIII: .BYTE 19,0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12
+REFLB:  .BYTE 24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19
+
+RESULT: .BYTE 0,0,0,0,0,0
+
+        .ORG $0600
+START:
+        ; Initialize: Rotors I-II-III, Key AAA
+        LDA #0
+        STA OFF0
+        STA OFF1
+        STA OFF2
+        LDA #4       ; notch[1] for rotor II
+        STA N1
+        LDA #21      ; notch[2] for rotor III
+        STA N2
+        LDA #5
+        STA COUNT
+
+        LDX #0       ; result index
+LOOP:
+        LDA COUNT
+        BEQ DONE
+        ; Step rotors (double-stepping)
+        JSR STEP
+        ; Encrypt A (value 0)
+        LDA #0
+        STA CHAR
+        JSR ENCRYPT_CHAR
+        ; Store result
+        LDA CHAR
+        CLC
+        ADC #65      ; Convert to ASCII
+        STA RESULT,X
+        INX
+        DEC COUNT
+        JMP LOOP
+DONE:
+        RTS
+
+; ---- Step rotors ----
+STEP:
+        LDA OFF1
+        CMP N1
+        BNE CHK_R
+        ; Middle at notch
+        INC OFF1
+        JSR MOD26_OFF1
+        INC OFF0
+        JSR MOD26_OFF0
+        JMP STEP_R
+CHK_R:
+        LDA OFF2
+        CMP N2
+        BNE STEP_R
+        INC OFF1
+        JSR MOD26_OFF1
+STEP_R:
+        INC OFF2
+        JSR MOD26_OFF2
+        RTS
+
+; ---- Mod26 helpers ----
+MOD26_OFF0:
+        LDA OFF0
+        JSR MOD26
+        STA OFF0
+        RTS
+MOD26_OFF1:
+        LDA OFF1
+        JSR MOD26
+        STA OFF1
+        RTS
+MOD26_OFF2:
+        LDA OFF2
+        JSR MOD26
+        STA OFF2
+        RTS
+
+; mod26: A = input, A = output
+MOD26:
+        CMP #26
+        BCC MOD_OK
+        SEC
+        SBC #26
+        JMP MOD26
+MOD_OK:
+        RTS
+
+; ---- Encrypt one character ----
+; CHAR = input/output
+ENCRYPT_CHAR:
+        ; Forward through III
+        LDA CHAR
+        CLC
+        ADC OFF2
+        JSR MOD26
+        TAY
+        LDA FWDIII,Y
+        SEC
+        SBC OFF2
+        JSR MOD26_SIGNED
+        STA CHAR
+        ; Forward through II
+        LDA CHAR
+        CLC
+        ADC OFF1
+        JSR MOD26
+        TAY
+        LDA FWDII,Y
+        SEC
+        SBC OFF1
+        JSR MOD26_SIGNED
+        STA CHAR
+        ; Forward through I
+        LDA CHAR
+        CLC
+        ADC OFF0
+        JSR MOD26
+        TAY
+        LDA FWDI,Y
+        SEC
+        SBC OFF0
+        JSR MOD26_SIGNED
+        STA CHAR
+        ; Reflector
+        LDY CHAR
+        LDA REFLB,Y
+        STA CHAR
+        ; Backward through I
+        LDA CHAR
+        CLC
+        ADC OFF0
+        JSR MOD26
+        TAY
+        LDA BWDI,Y
+        SEC
+        SBC OFF0
+        JSR MOD26_SIGNED
+        STA CHAR
+        ; Backward through II
+        LDA CHAR
+        CLC
+        ADC OFF1
+        JSR MOD26
+        TAY
+        LDA BWDII,Y
+        SEC
+        SBC OFF1
+        JSR MOD26_SIGNED
+        STA CHAR
+        ; Backward through III
+        LDA CHAR
+        CLC
+        ADC OFF2
+        JSR MOD26
+        TAY
+        LDA BWDIII,Y
+        SEC
+        SBC OFF2
+        JSR MOD26_SIGNED
+        STA CHAR
+        RTS
+
+; mod26 for possibly negative result
+MOD26_SIGNED:
+        BPL MOD26
+        CLC
+        ADC #26
+        JMP MOD26

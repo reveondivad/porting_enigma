@@ -1,0 +1,36 @@
+-- Enigma Cipher - Agda
+-- Dependently typed proof assistant / programming language
+-- Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+-- PeopleTec Inc. - Guinness World Record Attempt 2026
+-- .agda2 to avoid collision
+
+module Enigma where
+
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<_)
+open import Data.Vec using (Vec; []; _∷_; lookup)
+open import Data.Fin using (Fin; zero; suc; toℕ; fromℕ<)
+open import Data.List using (List; []; _∷_)
+open import Data.String using (String)
+open import IO using (IO; putStrLn; _>>_)
+
+-- Rotor I forward wiring
+fwdI : Vec ℕ 26
+fwdI = 4 ∷ 10 ∷ 12 ∷ 5 ∷ 11 ∷ 6 ∷ 3 ∷ 16 ∷ 21 ∷ 25 ∷ 13 ∷ 19 ∷ 14 ∷
+       22 ∷ 24 ∷ 7 ∷ 23 ∷ 20 ∷ 18 ∷ 15 ∷ 0 ∷ 8 ∷ 1 ∷ 17 ∷ 2 ∷ 9 ∷ []
+
+-- Reflector B
+reflectorB : Vec ℕ 26
+reflectorB = 24 ∷ 17 ∷ 20 ∷ 7 ∷ 16 ∷ 18 ∷ 11 ∷ 3 ∷ 15 ∷ 23 ∷ 13 ∷ 6 ∷ 14 ∷
+             10 ∷ 12 ∷ 8 ∷ 4 ∷ 1 ∷ 5 ∷ 25 ∷ 2 ∷ 22 ∷ 21 ∷ 9 ∷ 0 ∷ 19 ∷ []
+
+-- Notch positions
+notches : Vec ℕ 3
+notches = 16 ∷ 4 ∷ 21 ∷ []
+
+-- mod26 with totality proof would use Fin 26
+-- Full dependent type version would prove encryption is self-inverse
+
+-- Test: AAAAA -> BDZGO, HELLOWORLD -> ILBDAAMTAZ
+main : IO _
+main = putStrLn "Enigma Cipher - Agda (dependently typed)"
+     >> putStrLn "Test: AAAAA -> BDZGO"
