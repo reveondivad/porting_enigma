@@ -1,0 +1,47 @@
+FIXED TEST VECTORS (must match exactly)
+
+Vector 1
+Rotors: I II III
+Key: AAA
+Plugboard: none
+Plaintext: AAAAA
+Expected ciphertext: BDZGO
+
+Vector 2
+Rotors: I II III
+Key: AAA
+Plugboard: none
+Plaintext: HELLOWORLD
+Expected ciphertext: ILBDAAMTAZ
+
+Vector 3
+Rotors: I II III
+Key: AAA
+Plugboard: none
+Plaintext: ATTACKATDAWN
+Expected ciphertext: BZHGNOCRRTCM
+
+Vector 4
+Rotors: I II III
+Key: MCK
+Plugboard: none
+Plaintext: HELLOWORLD
+Expected ciphertext: DLTBBQVPQV
+
+Vector 5
+Rotors: III I II
+Key: AAA
+Plugboard: none
+Plaintext: HELLOWORLD
+Expected ciphertext: KZHDFQYHXT
+
+Vector 6
+Rotors: I II III
+Key: AAA
+Plugboard: AB CD EF
+Plaintext: HELLOWORLD
+Expected ciphertext: IKACBBMTBF
+
+REQUIRED INVARIANTS
+- Encryption and decryption are the same operation under the same configuration.
+- Stepping must include the historical double-step behavior.
