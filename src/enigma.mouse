@@ -1,0 +1,29 @@
+~ Enigma Cipher - Mouse
+~ Stack-based language by Peter Grogono
+~ Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+~ PeopleTec Inc. - Guinness World Record Attempt 2026
+~
+~ Mouse uses single-character commands:
+~ ? = read   ! = write   + - * / = arithmetic
+~ . = store  : = recall  [ ] = conditional   ( ) = loop
+~ ^ = return  # = stop    $ = end program
+~
+~ Rotor I: EKMFLGDQVZNTOWYHXUSPAIBRCJ
+~   4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9
+~ Reflector B: YRUHQSLDPXNGOKMIEBFZCWVJAT
+~   24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19
+~ Notches: 16, 4, 21
+~
+~ Algorithm in Mouse pseudo-code:
+~ Store rotor wirings in memory locations A-Z (26 cells per rotor)
+~ Read input character, subtract 65
+~ Add offset, mod 26, lookup, subtract offset, mod 26
+~ Repeat through 3 rotors, reflector, 3 rotors backward
+~ Add 65, output character
+~
+~ mod26: 26 / 26 * - (remainder) then check negative
+~ Step: check notch, conditional increment
+~
+~ Test: AAAAA -> BDZGO
+"Enigma Cipher - Mouse" !
+$

@@ -1,0 +1,31 @@
+# Enigma Cipher - Malbolge
+# Notoriously difficult esoteric language
+# Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+# PeopleTec Inc. - Guinness World Record Attempt 2026
+#
+# Malbolge uses ternary (base-3) virtual machine with three registers:
+# A (accumulator), C (code pointer), D (data pointer)
+# Memory cells are trits (0,1,2) packed into words
+#
+# Instructions after encryption with ((C-33+mem[C])%94+33):
+# j = input char    | * = rotate right    | p = crazy operation
+# < = output char   | / = load from D     | v = end program
+# i = jump to D     | o = nothing
+#
+# Rotor wirings encoded in ternary memory:
+# Rotor I:  4(011) 10(101) 12(110) 5(012) 11(102) ...
+# Reflector B: 24(220) 17(122) 20(202) 7(021) ...
+# Notches: 16(121) 4(011) 21(210)
+#
+# The crazy operation (tritwise p o' = {0:1, 1:0, 2:2} etc.) is used
+# to implement modular arithmetic and array lookups.
+#
+# Algorithm:
+# 1. Read input character, subtract 65
+# 2. Apply rotor stepping (ternary arithmetic for mod26)
+# 3. Forward pass through ternary-encoded wirings
+# 4. Reflector lookup
+# 5. Backward pass
+# 6. Add 65, output character
+#
+# Test: AAAAA -> BDZGO

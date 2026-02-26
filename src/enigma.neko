@@ -1,0 +1,91 @@
+// Enigma Cipher - Neko
+// Lightweight VM used by Haxe backend
+// Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+// PeopleTec Inc. - Guinness World Record Attempt 2026
+
+var fwdI  = $array(4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9);
+var fwdII = $array(0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4);
+var fwdIII= $array(1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14);
+var bwdI  = $array(20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9);
+var bwdII = $array(0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18);
+var bwdIII= $array(19,0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12);
+var reflector = $array(24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19);
+var notches = $array(16, 4, 21);
+
+var mod26 = function(n) {
+    var m = n % 26;
+    if (m < 0) m + 26 else m;
+}
+
+var getFwd = function(r, i) {
+    if (r == 0) fwdI[i]
+    else if (r == 1) fwdII[i]
+    else fwdIII[i];
+}
+
+var getBwd = function(r, i) {
+    if (r == 0) bwdI[i]
+    else if (r == 1) bwdII[i]
+    else bwdIII[i];
+}
+
+var passFwd = function(rotor, offset, ch) {
+    var inp = mod26(ch + offset);
+    var out = getFwd(rotor, inp);
+    mod26(out - offset);
+}
+
+var passBwd = function(rotor, offset, ch) {
+    var inp = mod26(ch + offset);
+    var out = getBwd(rotor, inp);
+    mod26(out - offset);
+}
+
+// State
+var gR = $array(0,1,2);
+var gO = $array(0,0,0);
+var gN = $array(4, 21);
+
+var init = function(r0, r1, r2, k0, k1, k2) {
+    gR[0] = r0; gR[1] = r1; gR[2] = r2;
+    gO[0] = k0; gO[1] = k1; gO[2] = k2;
+    gN[0] = notches[r1]; gN[1] = notches[r2];
+}
+
+var step = function() {
+    if (gO[1] == gN[0]) {
+        gO[1] = mod26(gO[1]+1);
+        gO[0] = mod26(gO[0]+1);
+    } else if (gO[2] == gN[1]) {
+        gO[1] = mod26(gO[1]+1);
+    }
+    gO[2] = mod26(gO[2]+1);
+}
+
+var pressKey = function(ch) {
+    step();
+    var c = ch;
+    c = passFwd(gR[2],gO[2],c); c = passFwd(gR[1],gO[1],c); c = passFwd(gR[0],gO[0],c);
+    c = reflector[c];
+    c = passBwd(gR[0],gO[0],c); c = passBwd(gR[1],gO[1],c); c = passBwd(gR[2],gO[2],c);
+    c;
+}
+
+var encrypt = function(msg) {
+    var len = $ssize(msg);
+    var buf = $smake(len);
+    var i = 0;
+    while (i < len) {
+        var ch = $sget(msg, i) - 65;
+        $sset(buf, i, pressKey(ch) + 65);
+        i = i + 1;
+    }
+    buf;
+}
+
+$print("Enigma Cipher - Neko\n");
+init(0,1,2,0,0,0); $print("Test 1: " + encrypt("AAAAA") + " expected BDZGO\n");
+init(0,1,2,0,0,0); $print("Test 2: " + encrypt("HELLOWORLD") + " expected ILBDAAMTAZ\n");
+init(0,1,2,0,0,0); $print("Test 3: " + encrypt("ATTACKATDAWN") + " expected BZHGNOCRRTCM\n");
+init(0,1,2,12,2,10); $print("Test 4: " + encrypt("HELLOWORLD") + " expected DLTBBQVPQV\n");
+init(2,0,1,0,0,0); $print("Test 5: " + encrypt("HELLOWORLD") + " expected KZHDFQYHXT\n");

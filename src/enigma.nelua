@@ -1,0 +1,101 @@
+-- Enigma Cipher - Nelua
+-- Systems programming with Lua-like syntax, compiles to C
+
+local FWD: [3][26]integer = {
+  {4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9},
+  {0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4},
+  {1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14}
+}
+
+local BWD: [3][26]integer = {
+  {20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9},
+  {0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18},
+  {19,0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12}
+}
+
+local NOTCH: [3]integer = {16, 4, 21}
+local REFLECTOR: [26]integer = {24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19}
+
+local function mod26(x: integer): integer
+  local m = x % 26
+  if m < 0 then m = m + 26 end
+  return m
+end
+
+local function pass_fwd(rotor: integer, offset: integer, ch: integer): integer
+  local inp = mod26(ch + offset)
+  local out = FWD[rotor][inp]
+  return mod26(out - offset)
+end
+
+local function pass_bwd(rotor: integer, offset: integer, ch: integer): integer
+  local inp = mod26(ch + offset)
+  local out = BWD[rotor][inp]
+  return mod26(out - offset)
+end
+
+local function encrypt(r0: integer, r1: integer, r2: integer,
+                       k0: integer, k1: integer, k2: integer,
+                       pb: *[26]integer, msg: string): string
+  local o0, o1, o2 = k0, k1, k2
+  local result: [64]byte
+  local len = #msg
+  for i = 0, < len do
+    local ch = msg.data[i] - 65
+    -- Step rotors
+    local mid = o1 == NOTCH[r1]
+    local atn = o2 == NOTCH[r2]
+    o2 = mod26(o2 + 1)
+    if atn or mid then o1 = mod26(o1 + 1) end
+    if mid then o0 = mod26(o0 + 1) end
+    -- Encrypt
+    local c = pb[ch]
+    c = pass_fwd(r2, o2, c)
+    c = pass_fwd(r1, o1, c)
+    c = pass_fwd(r0, o0, c)
+    c = REFLECTOR[c]
+    c = pass_bwd(r0, o0, c)
+    c = pass_bwd(r1, o1, c)
+    c = pass_bwd(r2, o2, c)
+    c = pb[c]
+    result[i] = (@byte)(c + 65)
+  end
+  return (@string){data=&result, size=len}
+end
+
+local function make_pb(pb: *[26]integer, pairs: span(integer)): void
+  for i = 0, < 26 do pb[i] = i end
+  for i = 0, < #pairs, 2 do
+    pb[pairs[i]] = pairs[i+1]
+    pb[pairs[i+1]] = pairs[i]
+  end
+end
+
+local function run_test(label: string, expected: string, actual: string): void
+  local status: string
+  if expected == actual then status = "PASS" else status = "FAIL" end
+  print(status, label .. ": " .. actual .. " (expected " .. expected .. ")")
+end
+
+print("Enigma Cipher - Nelua")
+local pb: [26]integer
+local no_pairs: []integer = {}
+local pairs: []integer = {0,1, 2,3, 4,5}
+
+make_pb(&pb, no_pairs)
+run_test("Test 1", "BDZGO", encrypt(0,1,2, 0,0,0, &pb, "AAAAA"))
+
+make_pb(&pb, no_pairs)
+run_test("Test 2", "ILBDAAMTAZ", encrypt(0,1,2, 0,0,0, &pb, "HELLOWORLD"))
+
+make_pb(&pb, no_pairs)
+run_test("Test 3", "BZHGNOCRRTCM", encrypt(0,1,2, 0,0,0, &pb, "ATTACKATDAWN"))
+
+make_pb(&pb, no_pairs)
+run_test("Test 4", "DLTBBQVPQV", encrypt(0,1,2, 12,2,10, &pb, "HELLOWORLD"))
+
+make_pb(&pb, no_pairs)
+run_test("Test 5", "KZHDFQYHXT", encrypt(2,0,1, 0,0,0, &pb, "HELLOWORLD"))
+
+make_pb(&pb, pairs)
+run_test("Test 6", "IKACBBMTBF", encrypt(0,1,2, 0,0,0, &pb, "HELLOWORLD"))
