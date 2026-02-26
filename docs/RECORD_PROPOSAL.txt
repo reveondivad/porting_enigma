@@ -1,1 +1,37 @@
+PROPOSED RECORD TITLE
+Most programming languages used to implement the same working computer program
 
+PROGRAM DEFINITION
+The program is a complete Enigma rotor cipher simulation (stateful rotor stepping, reflector, optional plugboard, reversible encryption/decryption).
+Canonical behavior is anchored to:
+https://github.com/NationalSecurityAgency/enigma-simulator
+
+UNIT OF MEASUREMENT
+Count of distinct programming languages with a working implementation.
+
+ESTIMATED RESULT
+513 distinct programming languages.
+
+INCLUSION RULES
+A language counts if:
+1) It is a distinct named language environment with its own compiler/interpreter/runtime.
+2) The implementation contains the full cipher logic in that language (not a wrapper calling another language).
+3) It produces correct outputs for the fixed test vectors.
+4) It satisfies required invariants (encryption/decryption symmetry, stepping behavior).
+
+NORMALIZATION RULES (to ensure “one variable” counting)
+Do not double-count:
+- Numeric suffix variants: e.g., groovy2, zig2, pony3..pony9, vale10..vale13.
+- Duplicate alternates with the same base language: enigma_2.* is not additional languages.
+- Simple extension aliases that do not represent distinct languages.
+
+BREAKABILITY
+Any challenger can break the record by implementing the same defined program in more distinct languages under the same rules and exceeding 513.
+
+VERIFIABILITY
+Evidence consists of:
+- repository snapshot with all source files
+- MANIFEST.csv listing each file and normalized language name
+- fixed test vectors with expected outputs
+- verification logs (automated where possible)
+- independent witness statement confirming count methodology and existence of verification artifacts
