@@ -1,0 +1,102 @@
+# Enigma Machine - Icon Implementation
+# Wehrmacht Enigma I (3-rotor, Reflector B, plugboard, double-stepping)
+# PeopleTec Inc. - Guinness World Record Attempt 2026
+
+global fwd, bwd, notch_pos, reflector
+
+procedure main()
+    fwd := ["EKMFLGDQVZNTOWYHXUSPAIBRCJ","AJDKSIRUXBLHWTMCQGZNPYFVOE","BDFHJLCPRTXVZNYEIWGAKMUSQO"]
+    bwd := ["UWYGADFPVZBECKMTHXSLRINQOJ","AJPCZWRLFBDKOTYUQGENHXMIVS","TAGBPCSDQEUFVNZHYIXJWLRKOM"]
+    notch_pos := [17, 5, 22]  # 1-based
+    reflector := "YRUHQSLDPXNGOKMIEBFZCWVJAT"
+
+    write("Enigma Machine - Icon Implementation")
+    write("=====================================")
+
+    tests := [
+        [[1,2,3], "AAA", [],              "AAAAA",        "BDZGO"],
+        [[1,2,3], "AAA", [],              "HELLOWORLD",   "ILBDAAMTAZ"],
+        [[1,2,3], "AAA", [],              "ATTACKATDAWN", "BZHGNOCRRTCM"],
+        [[1,2,3], "MCK", [],              "HELLOWORLD",   "DLTBBQVPQV"],
+        [[3,1,2], "AAA", [],              "HELLOWORLD",   "KZHDFQYHXT"],
+        [[1,2,3], "AAA", ["AB","CD","EF"],"HELLOWORLD",   "IKACBBMTBF"]
+    ]
+
+    all_pass := 1
+    every i := 1 to *tests do {
+        t := tests[i]
+        cipher := encrypt(t[1], t[2], t[3], t[4])
+        if cipher == t[5] then status := "PASS"
+        else { status := "FAIL"; all_pass := 0 }
+        write("  Test ", i, ": ", t[4], " -> ", cipher, " [", status, "]")
+        if status == "FAIL" then write("          Expected ", t[5])
+    }
+    if all_pass = 1 then write("\n  ALL 6 TESTS PASSED")
+    else write("\n  SOME TESTS FAILED")
+end
+
+procedure mod26(a)
+    return ((a % 26) + 26) % 26
+end
+
+procedure c2i(c)
+    return ord(c) - ord("A")
+end
+
+procedure i2c(i)
+    return char(i + ord("A"))
+end
+
+procedure encrypt(rotors, key, plugboard, text)
+    # Rotor state
+    l_fwd := fwd[rotors[1]]; l_bwd := bwd[rotors[1]]; l_notch := notch_pos[rotors[1]]
+    m_fwd := fwd[rotors[2]]; m_bwd := bwd[rotors[2]]; m_notch := notch_pos[rotors[2]]
+    r_fwd := fwd[rotors[3]]; r_bwd := bwd[rotors[3]]; r_notch := notch_pos[rotors[3]]
+    l_off := c2i(key[1]); m_off := c2i(key[2]); r_off := c2i(key[3])
+
+    # Plugboard
+    plug := list(26)
+    every j := 1 to 26 do plug[j] := j - 1
+    every j := 1 to *plugboard do {
+        a := c2i(plugboard[j][1]) + 1
+        b := c2i(plugboard[j][2]) + 1
+        plug[a] := b - 1; plug[b] := a - 1
+    }
+
+    result := ""
+    every k := 1 to *text do {
+        c := map(text[k], &lcase, &ucase)
+        if find(c, &ucase) then {
+            # Step rotors
+            if m_off + 1 = m_notch then { m_off := (m_off + 1) % 26; l_off := (l_off + 1) % 26 }
+            else if r_off + 1 = r_notch then { m_off := (m_off + 1) % 26 }
+            r_off := (r_off + 1) % 26
+
+            idx := c2i(c)
+            idx := plug[idx + 1]
+
+            # Forward through rotors
+            contact := mod26(idx + r_off)
+            idx := mod26(c2i(r_fwd[contact + 1]) - r_off)
+            contact := mod26(idx + m_off)
+            idx := mod26(c2i(m_fwd[contact + 1]) - m_off)
+            contact := mod26(idx + l_off)
+            idx := mod26(c2i(l_fwd[contact + 1]) - l_off)
+
+            # Reflector
+            idx := c2i(reflector[idx + 1])
+
+            # Backward through rotors
+            contact := mod26(idx + l_off)
+            idx := mod26(c2i(l_bwd[contact + 1]) - l_off)
+            contact := mod26(idx + m_off)
+            idx := mod26(c2i(m_bwd[contact + 1]) - m_off)
+            contact := mod26(idx + r_off)
+            idx := mod26(c2i(r_bwd[contact + 1]) - r_off)
+
+            idx := plug[idx + 1]
+            result ||:= i2c(idx)
+        }
+    }
+    return result
+end

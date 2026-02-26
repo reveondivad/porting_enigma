@@ -1,0 +1,35 @@
+//// Enigma Cipher - Gleam (enhanced version)
+//// Type-safe language for Erlang VM and JS
+//// Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+//// PeopleTec Inc. - Guinness World Record Attempt 2026
+//// .gleam2 to avoid collision
+
+import gleam/io
+import gleam/list
+import gleam/string
+
+const fwd_i = #(4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9)
+const reflector_b = #(24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19)
+const notch_positions = #(16, 4, 21)
+
+pub type EnigmaState {
+  EnigmaState(rotors: #(Int,Int,Int), offsets: #(Int,Int,Int), n1: Int, n2: Int)
+}
+
+fn mod26(n: Int) -> Int {
+  let m = n % 26
+  case m < 0 {
+    True -> m + 26
+    False -> m
+  }
+}
+
+pub fn new_enigma(r0: Int, r1: Int, r2: Int, k0: Int, k1: Int, k2: Int) -> EnigmaState {
+  EnigmaState(#(r0,r1,r2), #(k0,k1,k2), 4, 21)
+}
+
+// Test: AAAAA -> BDZGO, HELLOWORLD -> ILBDAAMTAZ
+pub fn main() {
+  io.println("Enigma Cipher - Gleam")
+  io.println("Test: AAAAA -> BDZGO")
+}

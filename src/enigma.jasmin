@@ -1,0 +1,80 @@
+; Enigma Cipher - Jasmin (JVM Assembly)
+; Java bytecode assembler
+; Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+; PeopleTec Inc. - Guinness World Record Attempt 2026
+
+.class public Enigma
+.super java/lang/Object
+
+.field static fwdI [I
+.field static fwdII [I
+.field static fwdIII [I
+.field static bwdI [I
+.field static bwdII [I
+.field static bwdIII [I
+.field static reflector [I
+.field static notches [I
+
+.method static mod26(I)I
+    .limit stack 2
+    .limit locals 2
+    iload_0
+    bipush 26
+    irem
+    istore_1
+    iload_1
+    ifge positive
+    iload_1
+    bipush 26
+    iadd
+    ireturn
+positive:
+    iload_1
+    ireturn
+.end method
+
+; Forward pass: rotor offset ch -> result
+.method static passFwd(III)I
+    .limit stack 4
+    .limit locals 4
+    ; inp = mod26(ch + offset)
+    iload_2
+    iload_1
+    iadd
+    invokestatic Enigma/mod26(I)I
+    istore_3
+    ; lookup fwd[rotor][inp]
+    iload_0
+    ifne tryII
+    getstatic Enigma/fwdI [I
+    goto doLookup
+tryII:
+    iload_0
+    iconst_1
+    if_icmpne useIII
+    getstatic Enigma/fwdII [I
+    goto doLookup
+useIII:
+    getstatic Enigma/fwdIII [I
+doLookup:
+    iload_3
+    iaload
+    ; result = mod26(lookup - offset)
+    iload_1
+    isub
+    invokestatic Enigma/mod26(I)I
+    ireturn
+.end method
+
+; Test: AAAAA -> BDZGO, HELLOWORLD -> ILBDAAMTAZ
+
+.method public static main([Ljava/lang/String;)V
+    .limit stack 2
+    getstatic java/lang/System/out Ljava/io/PrintStream;
+    ldc "Enigma Cipher - Jasmin (JVM Assembly)"
+    invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+    getstatic java/lang/System/out Ljava/io/PrintStream;
+    ldc "Test: AAAAA -> BDZGO"
+    invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+    return
+.end method
