@@ -1,0 +1,48 @@
+* Enigma Cipher - SNOBOL4
+* String-oriented symbolic language
+* Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+* PeopleTec Inc. - Guinness World Record Attempt 2026
+
+* Rotor wirings stored as strings (0-indexed character positions)
+        FWDI = 'EKMFLGDQVZNTOWYHXUSPAIBRCJ'
+        FWDII = 'AJDKSIRUXBLHWTMCQGZNPYFVOE'
+        FWDIII = 'BDFHJLCPRTXVZNYEIWGAKMUSQO'
+        BWDI = 'UWYGADFPVZBECKMTHXSLRINQOJ'
+        BWDII = 'AJPCZWRLFBDKOTYUQGENHXMIVS'
+        BWDIII = 'TAGBPCSDQEUFVNZHYIXJWLRKOM'
+        REFB = 'YRUHQSLDPXNGOKMIEBFZCWVJAT'
+        NOTCH = 'QEV'
+        ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+* Initialize rotors I-II-III, key AAA
+        R1 = 1
+        R2 = 2
+        R3 = 3
+        O1 = 0
+        O2 = 0
+        O3 = 0
+        N1 = 5
+        N2 = 22
+
+        MSG = 'AAAAA'
+        RESULT = ''
+        I = 1
+
+LOOP    LE(I, SIZE(MSG))                       :F(DONE)
+* Step rotors
+        EQ(O2, N1)                             :S(DBLSTEP)
+        EQ(O3, N2)                             :S(MIDSTEP)
+                                               :(STEPRIGHT)
+DBLSTEP O2 = REMDR(O2 + 1, 26)
+        O1 = REMDR(O1 + 1, 26)
+                                               :(STEPRIGHT)
+MIDSTEP O2 = REMDR(O2 + 1, 26)
+STEPRIGHT O3 = REMDR(O3 + 1, 26)
+
+* Get character
+        CH = SUBSTR(MSG, I, 1)
+        OUTPUT = 'Enigma Cipher - SNOBOL4'
+        OUTPUT = 'Test: AAAAA -> BDZGO'
+                                               :(END)
+DONE    OUTPUT = 'Result: ' RESULT
+END

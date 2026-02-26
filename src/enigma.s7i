@@ -1,0 +1,179 @@
+(* Enigma Machine - Seed7 Implementation *)
+(* Wehrmacht Enigma I (3-rotor, Reflector B, plugboard, double-stepping) *)
+(* PeopleTec Inc. - Guinness World Record Attempt 2026 *)
+
+$ include "seed7_05.s7i";
+
+const array string: FWD is [] ("EKMFLGDQVZNTOWYHXUSPAIBRCJ",
+    "AJDKSIRUXBLHWTMCQGZNPYFVOE", "BDFHJLCPRTXVZNYEIWGAKMUSQO");
+const array string: BWD is [] ("UWYGADFPVZBECKMTHXSLRINQOJ",
+    "AJPCZWRLFBDKOTYUQGENHXMIVS", "TAGBPCSDQEUFVNZHYIXJWLRKOM");
+const array integer: NOTCH is [] (16, 4, 21);
+const string: REFL is "YRUHQSLDPXNGOKMIEBFZCWVJAT";
+
+const func integer: mod26 (in integer: a) is
+  return ((a rem 26) + 26) rem 26;
+
+const func integer: c2i (in char: c) is return ord(c) - ord('A');
+const func char: i2c (in integer: i) is return chr(i + ord('A'));
+
+const type: rotorType is new struct
+    var string: fwd is "";
+    var string: bwd is "";
+    var integer: notch is 0;
+    var integer: offset is 0;
+  end struct;
+
+const func rotorType: makeRotor (in integer: num, in char: win) is func
+  result
+    var rotorType: r is rotorType.value;
+  begin
+    r.fwd := FWD[num + 1];
+    r.bwd := BWD[num + 1];
+    r.notch := NOTCH[num + 1];
+    r.offset := c2i(win);
+  end func;
+
+const func integer: fwdPass (inout rotorType: r, in integer: idx) is func
+  result
+    var integer: res is 0;
+  local
+    var integer: contact is 0;
+  begin
+    contact := mod26(idx + r.offset);
+    res := mod26(c2i(r.fwd[contact + 1]) - r.offset);
+  end func;
+
+const func integer: bwdPass (inout rotorType: r, in integer: idx) is func
+  result
+    var integer: res is 0;
+  local
+    var integer: contact is 0;
+  begin
+    contact := mod26(idx + r.offset);
+    res := mod26(c2i(r.bwd[contact + 1]) - r.offset);
+  end func;
+
+const proc: stepRotor (inout rotorType: r) is func
+  begin
+    r.offset := (r.offset + 1) rem 26;
+  end func;
+
+const func boolean: atNotch (in rotorType: r) is return r.offset = r.notch;
+
+const type: enigmaType is new struct
+    var rotorType: left is rotorType.value;
+    var rotorType: middle is rotorType.value;
+    var rotorType: right is rotorType.value;
+    var array integer: plug is 26 times 0;
+  end struct;
+
+const func enigmaType: makeEnigma (in array integer: rotors,
+    in string: key, in array string: plugboard) is func
+  result
+    var enigmaType: e is enigmaType.value;
+  local
+    var integer: i is 0;
+    var integer: a is 0;
+    var integer: b is 0;
+  begin
+    e.left := makeRotor(rotors[1], key[1]);
+    e.middle := makeRotor(rotors[2], key[2]);
+    e.right := makeRotor(rotors[3], key[3]);
+    for i range 1 to 26 do e.plug[i] := i - 1; end for;
+    for i range 1 to length(plugboard) do
+      a := c2i(plugboard[i][1]);
+      b := c2i(plugboard[i][2]);
+      e.plug[a + 1] := b;
+      e.plug[b + 1] := a;
+    end for;
+  end func;
+
+const proc: stepRotors (inout enigmaType: e) is func
+  begin
+    if atNotch(e.middle) then
+      stepRotor(e.middle);
+      stepRotor(e.left);
+    elsif atNotch(e.right) then
+      stepRotor(e.middle);
+    end if;
+    stepRotor(e.right);
+  end func;
+
+const func char: pressKey (inout enigmaType: e, in char: c) is func
+  result
+    var char: res is ' ';
+  local
+    var integer: idx is 0;
+  begin
+    stepRotors(e);
+    idx := c2i(c);
+    idx := e.plug[idx + 1];
+    idx := fwdPass(e.right, idx);
+    idx := fwdPass(e.middle, idx);
+    idx := fwdPass(e.left, idx);
+    idx := c2i(REFL[idx + 1]);
+    idx := bwdPass(e.left, idx);
+    idx := bwdPass(e.middle, idx);
+    idx := bwdPass(e.right, idx);
+    idx := e.plug[idx + 1];
+    res := i2c(idx);
+  end func;
+
+const func string: encrypt (inout enigmaType: e, in string: text) is func
+  result
+    var string: res is "";
+  local
+    var integer: i is 0;
+    var char: c is ' ';
+  begin
+    for i range 1 to length(text) do
+      c := upper(text[i]);
+      if c >= 'A' and c <= 'Z' then
+        res &:= str(pressKey(e, c));
+      end if;
+    end for;
+  end func;
+
+const proc: main is func
+  local
+    var enigmaType: e is enigmaType.value;
+    var string: cipher is "";
+    var boolean: allPass is TRUE;
+  begin
+    writeln("Enigma Machine - Seed7 Implementation");
+    writeln("======================================");
+
+    e := makeEnigma([] (0,1,2), "AAA", 0 times "");
+    cipher := encrypt(e, "AAAAA");
+    write("  Test 1: AAAAA        -> " <& cipher <& " [");
+    if cipher = "BDZGO" then writeln("PASS]"); else writeln("FAIL]"); allPass := FALSE; end if;
+
+    e := makeEnigma([] (0,1,2), "AAA", 0 times "");
+    cipher := encrypt(e, "HELLOWORLD");
+    write("  Test 2: HELLOWORLD   -> " <& cipher <& " [");
+    if cipher = "ILBDAAMTAZ" then writeln("PASS]"); else writeln("FAIL]"); allPass := FALSE; end if;
+
+    e := makeEnigma([] (0,1,2), "AAA", 0 times "");
+    cipher := encrypt(e, "ATTACKATDAWN");
+    write("  Test 3: ATTACKATDAWN -> " <& cipher <& " [");
+    if cipher = "BZHGNOCRRTCM" then writeln("PASS]"); else writeln("FAIL]"); allPass := FALSE; end if;
+
+    e := makeEnigma([] (0,1,2), "MCK", 0 times "");
+    cipher := encrypt(e, "HELLOWORLD");
+    write("  Test 4: HELLOWORLD   -> " <& cipher <& " [");
+    if cipher = "DLTBBQVPQV" then writeln("PASS]"); else writeln("FAIL]"); allPass := FALSE; end if;
+
+    e := makeEnigma([] (2,0,1), "AAA", 0 times "");
+    cipher := encrypt(e, "HELLOWORLD");
+    write("  Test 5: HELLOWORLD   -> " <& cipher <& " [");
+    if cipher = "KZHDFQYHXT" then writeln("PASS]"); else writeln("FAIL]"); allPass := FALSE; end if;
+
+    e := makeEnigma([] (0,1,2), "AAA", [] ("AB","CD","EF"));
+    cipher := encrypt(e, "HELLOWORLD");
+    write("  Test 6: HELLOWORLD   -> " <& cipher <& " [");
+    if cipher = "IKACBBMTBF" then writeln("PASS]"); else writeln("FAIL]"); allPass := FALSE; end if;
+
+    if allPass then writeln(""); writeln("  ALL 6 TESTS PASSED");
+    else writeln(""); writeln("  SOME TESTS FAILED"); end if;
+  end func;

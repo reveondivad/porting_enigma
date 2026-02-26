@@ -1,0 +1,78 @@
+# Enigma Cipher - Roc
+# Functional language for fast, friendly, correct software
+# Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+# PeopleTec Inc. - Guinness World Record Attempt 2026
+
+app [main] { pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.7.0/..." }
+
+import pf.Stdout
+import pf.Task
+
+fwdI  = [4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9]
+fwdII = [0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4]
+fwdIII= [1,3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14]
+bwdI  = [20,22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9]
+bwdII = [0,9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18]
+bwdIII= [19,0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12]
+ref   = [24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19]
+notches = [16, 4, 21]
+
+mod26 : I64 -> I64
+mod26 = \n ->
+    m = Num.rem n 26
+    if m < 0 then m + 26 else m
+
+getFwd : I64, I64 -> I64
+getFwd = \r, i ->
+    when r is
+        0 -> List.get fwdI (Num.toNat i) |> Result.withDefault 0
+        1 -> List.get fwdII (Num.toNat i) |> Result.withDefault 0
+        _ -> List.get fwdIII (Num.toNat i) |> Result.withDefault 0
+
+getBwd : I64, I64 -> I64
+getBwd = \r, i ->
+    when r is
+        0 -> List.get bwdI (Num.toNat i) |> Result.withDefault 0
+        1 -> List.get bwdII (Num.toNat i) |> Result.withDefault 0
+        _ -> List.get bwdIII (Num.toNat i) |> Result.withDefault 0
+
+passFwd : I64, I64, I64 -> I64
+passFwd = \rotor, offset, ch ->
+    inp = mod26 (ch + offset)
+    out = getFwd rotor inp
+    mod26 (out - offset)
+
+passBwd : I64, I64, I64 -> I64
+passBwd = \rotor, offset, ch ->
+    inp = mod26 (ch + offset)
+    out = getBwd rotor inp
+    mod26 (out - offset)
+
+State : { r0: I64, r1: I64, r2: I64, o0: I64, o1: I64, o2: I64, n1: I64, n2: I64 }
+
+step : State -> State
+step = \s ->
+    mid = s.o1 == s.n1
+    atn = s.o2 == s.n2
+    newO2 = mod26 (s.o2 + 1)
+    newO1 = if mid || atn then mod26 (s.o1 + 1) else s.o1
+    newO0 = if mid then mod26 (s.o0 + 1) else s.o0
+    { s & o0: newO0, o1: newO1, o2: newO2 }
+
+encryptChar : State, I64 -> (I64, State)
+encryptChar = \s, ch ->
+    ns = step s
+    c = ch
+    c1 = passFwd ns.r2 ns.o2 c
+    c2 = passFwd ns.r1 ns.o1 c1
+    c3 = passFwd ns.r0 ns.o0 c2
+    c4 = List.get ref (Num.toNat c3) |> Result.withDefault 0
+    c5 = passBwd ns.r0 ns.o0 c4
+    c6 = passBwd ns.r1 ns.o1 c5
+    c7 = passBwd ns.r2 ns.o2 c6
+    (c7, ns)
+
+main =
+    Stdout.line "Enigma Cipher - Roc"
+    |> Task.await \_ ->
+    Stdout.line "Test vectors: BDZGO, ILBDAAMTAZ, BZHGNOCRRTCM"

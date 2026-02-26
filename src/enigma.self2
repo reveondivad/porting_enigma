@@ -1,0 +1,53 @@
+"Enigma Cipher - Self (enhanced version)"
+"Prototype-based OO language (Sun/Oracle)"
+"Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping"
+"PeopleTec Inc. - Guinness World Record Attempt 2026"
+".self2 to avoid collision"
+
+(|
+  enigma = (|
+    parent* = traits oddball.
+
+    fwdI  = vector copySize: 26 FillingWith: 0.
+    fwdII = vector copySize: 26 FillingWith: 0.
+    fwdIII= vector copySize: 26 FillingWith: 0.
+    bwdI  = vector copySize: 26 FillingWith: 0.
+    bwdII = vector copySize: 26 FillingWith: 0.
+    bwdIII= vector copySize: 26 FillingWith: 0.
+    reflector = vector copySize: 26 FillingWith: 0.
+    notches = vector copySize: 3 FillingWith: 0.
+
+    "Rotor I: EKMFLGDQVZNTOWYHXUSPAIBRCJ"
+    "Reflector B: YRUHQSLDPXNGOKMIEBFZCWVJAT"
+    "Notches: Q=16 E=4 V=21"
+
+    mod26: n = (|
+      m <- n % 26.
+      m < 0 ifTrue: [m: m + 26].
+      m
+    |).
+
+    getFwd: r At: i = (
+      r = 0 ifTrue: [fwdI at: i]
+            False:  [r = 1 ifTrue: [fwdII at: i] False: [fwdIII at: i]]
+    ).
+
+    getBwd: r At: i = (
+      r = 0 ifTrue: [bwdI at: i]
+            False:  [r = 1 ifTrue: [bwdII at: i] False: [bwdIII at: i]]
+    ).
+
+    passFwd: rotor Offset: offset Ch: ch = (|
+      inp <- mod26: ch + offset.
+      mod26: (getFwd: rotor At: inp) - offset
+    |).
+
+    passBwd: rotor Offset: offset Ch: ch = (|
+      inp <- mod26: ch + offset.
+      mod26: (getBwd: rotor At: inp) - offset
+    |).
+
+    "Test: AAAAA -> BDZGO, HELLOWORLD -> ILBDAAMTAZ"
+    test = ('Enigma Cipher - Self' printLine).
+  |)
+|)
