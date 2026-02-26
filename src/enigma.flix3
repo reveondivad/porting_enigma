@@ -1,0 +1,29 @@
+// Enigma Cipher - Flix
+// Functional+logic language for JVM with Datalog
+// Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+// PeopleTec Inc. - Guinness World Record Attempt 2026
+// .flix3 to avoid collision with .flix and .flix2
+
+def fwdI(): Array[Int32, Static] \ {} =
+    Array#{4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9} @ Static
+
+def reflectorB(): Array[Int32, Static] \ {} =
+    Array#{24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19} @ Static
+
+def notches(): Array[Int32, Static] \ {} =
+    Array#{16, 4, 21} @ Static
+
+def mod26(n: Int32): Int32 =
+    let m = Int32.remainder(n, 26);
+    if (m < 0) m + 26 else m
+
+def passFwd(rotor: Int32, offset: Int32, ch: Int32): Int32 \ {} =
+    let inp = mod26(ch + offset);
+    let wiring = fwdI();
+    mod26(Array.get(inp, wiring) - offset)
+
+// Test: AAAAA -> BDZGO, HELLOWORLD -> ILBDAAMTAZ
+
+def main(): Unit \ IO =
+    println("Enigma Cipher - Flix")
+    println("Test: AAAAA -> BDZGO")

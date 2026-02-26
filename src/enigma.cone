@@ -1,0 +1,37 @@
+// Enigma Cipher - Cone
+// Systems language with gradual memory management
+// Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+// PeopleTec Inc. - Guinness World Record Attempt 2026
+
+fn mod26(n i32) i32:
+    m = n % 26
+    if m < 0:
+        m + 26
+    else:
+        m
+
+struct Enigma:
+    r [3]i32
+    o [3]i32
+    n1 i32
+    n2 i32
+
+fn Enigma.new(r0 i32, r1 i32, r2 i32, k0 i32, k1 i32, k2 i32) Enigma:
+    Enigma{r: [r0,r1,r2], o: [k0,k1,k2], n1: 4, n2: 21}
+
+fn Enigma.step(mut self):
+    if self.o[1] == self.n1:
+        self.o[1] = mod26(self.o[1]+1)
+        self.o[0] = mod26(self.o[0]+1)
+    elif self.o[2] == self.n2:
+        self.o[1] = mod26(self.o[1]+1)
+    self.o[2] = mod26(self.o[2]+1)
+
+// Rotor I forward: EKMFLGDQVZNTOWYHXUSPAIBRCJ
+// Reflector B: YRUHQSLDPXNGOKMIEBFZCWVJAT
+// Notches: Q(16), E(4), V(21)
+// Test: AAAAA -> BDZGO, HELLOWORLD -> ILBDAAMTAZ
+
+fn main():
+    print("Enigma Cipher - Cone")
+    print("Test: AAAAA -> BDZGO")

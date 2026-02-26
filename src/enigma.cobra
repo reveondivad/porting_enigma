@@ -1,0 +1,120 @@
+"""
+Enigma Machine - Cobra Implementation
+Wehrmacht Enigma I (3-rotor, Reflector B, plugboard, double-stepping)
+PeopleTec Inc. - Guinness World Record Attempt 2026
+"""
+
+class Rotor
+    cue init(num as int, win as char)
+        base.init
+        _fwd = _FWD[num]
+        _bwd = _BWD[num]
+        _notch = _NOTCH[num]
+        _offset = win to int - c'A' to int
+
+    get offset as int
+        return _offset
+
+    pro fwd from var as String
+    pro bwd from var as String
+    var _notch as int
+    var _offset as int
+
+    shared
+        var _FWD = ["EKMFLGDQVZNTOWYHXUSPAIBRCJ","AJDKSIRUXBLHWTMCQGZNPYFVOE","BDFHJLCPRTXVZNYEIWGAKMUSQO"]
+        var _BWD = ["UWYGADFPVZBECKMTHXSLRINQOJ","AJPCZWRLFBDKOTYUQGENHXMIVS","TAGBPCSDQEUFVNZHYIXJWLRKOM"]
+        var _NOTCH = [16, 4, 21]
+
+    def forward(idx as int) as int
+        contact = .mod26(idx + _offset)
+        return .mod26(_fwd[contact] to int - c'A' to int - _offset)
+
+    def backward(idx as int) as int
+        contact = .mod26(idx + _offset)
+        return .mod26(_bwd[contact] to int - c'A' to int - _offset)
+
+    def step
+        _offset = (_offset + 1) % 26
+
+    def atNotch as bool
+        return _offset == _notch
+
+    def mod26(a as int) as int
+        return ((a % 26) + 26) % 26
+
+
+class EnigmaMachine
+    var _left as Rotor
+    var _middle as Rotor
+    var _right as Rotor
+    var _plug as int[]
+
+    cue init(rotors as int[], key as String, plugboard as String[])
+        base.init
+        _left = Rotor(rotors[0], key[0])
+        _middle = Rotor(rotors[1], key[1])
+        _right = Rotor(rotors[2], key[2])
+        _plug = int[](26)
+        for i in 26, _plug[i] = i
+        for pair in plugboard
+            a = pair[0] to int - c'A' to int
+            b = pair[1] to int - c'A' to int
+            _plug[a] = b
+            _plug[b] = a
+
+    def stepRotors
+        if _middle.atNotch
+            _middle.step
+            _left.step
+        else if _right.atNotch
+            _middle.step
+        _right.step
+
+    def pressKey(c as char) as char
+        .stepRotors
+        refl = "YRUHQSLDPXNGOKMIEBFZCWVJAT"
+        idx = c to int - c'A' to int
+        idx = _plug[idx]
+        idx = _right.forward(idx)
+        idx = _middle.forward(idx)
+        idx = _left.forward(idx)
+        idx = refl[idx] to int - c'A' to int
+        idx = _left.backward(idx)
+        idx = _middle.backward(idx)
+        idx = _right.backward(idx)
+        idx = _plug[idx]
+        return (idx + c'A' to int) to char
+
+    def encrypt(text as String) as String
+        result = StringBuilder()
+        for c in text.toUpper
+            if c >= c'A' and c <= c'Z'
+                result.append(.pressKey(c))
+        return result.toString
+
+
+class Program
+    def main
+        print 'Enigma Machine - Cobra Implementation'
+        print '======================================'
+
+        tests = [
+            [@[0,1,2], 'AAA', @String[], 'AAAAA', 'BDZGO'],
+            [@[0,1,2], 'AAA', @String[], 'HELLOWORLD', 'ILBDAAMTAZ'],
+            [@[0,1,2], 'AAA', @String[], 'ATTACKATDAWN', 'BZHGNOCRRTCM'],
+            [@[0,1,2], 'MCK', @String[], 'HELLOWORLD', 'DLTBBQVPQV'],
+            [@[2,0,1], 'AAA', @String[], 'HELLOWORLD', 'KZHDFQYHXT'],
+            [@[0,1,2], 'AAA', @['AB','CD','EF'], 'HELLOWORLD', 'IKACBBMTBF'],
+        ]
+
+        allPass = true
+        for i, t in tests.numbered
+            e = EnigmaMachine(t[0] to int[], t[1] to String, t[2] to String[])
+            cipher = e.encrypt(t[3] to String)
+            ok = cipher == t[4] to String
+            status = if(ok, 'PASS', 'FAIL')
+            print '  Test [i+1]: [t[3]] -> [cipher] \[[status]]'
+            if not ok
+                print '          Expected [t[4]]'
+                allPass = false
+        print if(allPass, '\n  ALL 6 TESTS PASSED', '\n  SOME TESTS FAILED')

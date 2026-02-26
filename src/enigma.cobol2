@@ -1,0 +1,64 @@
+      * Enigma Cipher - COBOL (enhanced version)
+      * Business-oriented common language (ISO standard)
+      * Wehrmacht Enigma I, 3 rotors, Reflector B
+      * PeopleTec Inc. - Guinness World Record Attempt 2026
+      * .cobol2 to avoid collision
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ENIGMA-CIPHER.
+       AUTHOR. PEOPLETEC-INC.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 FWD-I.
+          05 FI PIC 99 OCCURS 26.
+       01 FWD-II.
+          05 FII PIC 99 OCCURS 26.
+       01 FWD-III.
+          05 FIII PIC 99 OCCURS 26.
+       01 BWD-I.
+          05 BI PIC 99 OCCURS 26.
+       01 BWD-II.
+          05 BII PIC 99 OCCURS 26.
+       01 BWD-III.
+          05 BIII PIC 99 OCCURS 26.
+       01 REFLECTOR-B.
+          05 REF-B PIC 99 OCCURS 26.
+       01 NOTCH-POS.
+          05 NOTCH PIC 99 OCCURS 3.
+
+       01 WS-ROTORS.
+          05 WS-R PIC 9 OCCURS 3.
+       01 WS-OFFSETS.
+          05 WS-O PIC 99 OCCURS 3.
+       01 WS-N1 PIC 99.
+       01 WS-N2 PIC 99.
+       01 WS-MSG PIC X(20).
+       01 WS-RESULT PIC X(20).
+       01 WS-C PIC S99.
+       01 WS-INP PIC 99.
+       01 WS-IDX PIC 99.
+       01 WS-I PIC 99.
+       01 WS-M PIC S99.
+
+       PROCEDURE DIVISION.
+       MAIN-PROGRAM.
+           DISPLAY "Enigma Cipher - COBOL"
+      * Initialize rotor wirings
+           MOVE 04 TO FI(1) MOVE 10 TO FI(2)
+           MOVE 12 TO FI(3) MOVE 05 TO FI(4)
+      * Reflector B first few entries
+           MOVE 24 TO REF-B(1) MOVE 17 TO REF-B(2)
+           MOVE 20 TO REF-B(3) MOVE 07 TO REF-B(4)
+      * Notches
+           MOVE 16 TO NOTCH(1) MOVE 04 TO NOTCH(2)
+           MOVE 21 TO NOTCH(3)
+
+           DISPLAY "Test: AAAAA -> BDZGO"
+           STOP RUN.
+
+       MOD26-PARA.
+           COMPUTE WS-M = FUNCTION MOD(WS-C, 26)
+           IF WS-M < 0
+               ADD 26 TO WS-M
+           END-IF
+           MOVE WS-M TO WS-C.

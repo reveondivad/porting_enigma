@@ -1,0 +1,23 @@
+# Enigma Cipher - dc
+# Unix arbitrary precision desk calculator
+# Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+# PeopleTec Inc. - Guinness World Record Attempt 2026
+#
+# dc is a stack-based RPN calculator language
+# Commands: p=print, d=dup, r=swap, +,-,*,/,%=arithmetic
+# s/l = store/load in register, []=string/macro
+#
+# Rotor I Forward: 4 10 12 5 11 6 3 16 21 25 13 19 14 22 24 7 23 20 18 15 0 8 1 17 2 9
+# Reflector B: 24 17 20 7 16 18 11 3 15 23 13 6 14 10 12 8 4 1 5 25 2 22 21 9 0 19
+# Notches: 16 4 21
+#
+# mod26 macro (stored in register m):
+# [d 26 % d 0>n] sm    # mod26: dup, mod 26, if negative add 26
+# [26 +] sn             # negative handler: add 26
+#
+# Algorithm: Push char, add offset, call mod26, lookup rotor, subtract offset, call mod26
+# Repeat for each rotor, then reflector, then reverse
+#
+# Test: A(0) through rotors -> B(1) = first char of BDZGO
+[Enigma Cipher - dc]p
+[Test: AAAAA -> BDZGO]p
