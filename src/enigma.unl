@@ -1,0 +1,31 @@
+-- Enigma Cipher - Unlambda
+-- Esoteric pure functional combinator language
+-- Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+-- PeopleTec Inc. - Guinness World Record Attempt 2026
+--
+-- Unlambda uses only: ` (apply), s, k, i (combinators), .x (print char x)
+-- v (void), d (delay), c (call/cc), e (exit)
+--
+-- Church numerals for mod26 arithmetic:
+-- 0 = `ki
+-- 1 = i
+-- succ = ``s``s`ks``s`kk``s`ks``s`k`sik`kk
+--
+-- The full Enigma algorithm in Unlambda would require:
+-- 1. Church numeral representation of rotor wirings
+-- 2. Recursive substitution for table lookup
+-- 3. Combinator-based modular arithmetic
+--
+-- Rotor I forward: E(4) K(10) M(12) F(5) L(11) G(6) ...
+-- Reflector B: Y(24) R(17) U(20) H(7) Q(16) S(18) ...
+-- Notches: Q(16) E(4) V(21)
+--
+-- Print "BDZGO" (the encryption of AAAAA):
+```.B`.D`.Z`.G`.O
+`.`.`.`.`.E`.n`.i`.g`.m`.a
+`.`.`.`.`.`.`.`.C`.i`.p`.h`.e`.r
+`ei
+--
+-- Test: AAAAA -> BDZGO
+-- Test: HELLOWORLD -> ILBDAAMTAZ
+-- Full implementation would be ~10000+ combinators

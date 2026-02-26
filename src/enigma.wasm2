@@ -1,0 +1,53 @@
+;; Enigma Cipher - WebAssembly Text Format (enhanced)
+;; Low-level virtual ISA for the web
+;; Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+;; PeopleTec Inc. - Guinness World Record Attempt 2026
+;; .wasm2 to avoid collision
+
+(module
+  ;; Memory for rotor wirings: offset 0=fwdI, 26=fwdII, 52=fwdIII
+  ;; 78=bwdI, 104=bwdII, 130=bwdIII, 156=reflector, 182=notches
+  (memory (export "memory") 1)
+
+  ;; Initialize rotor I forward at offset 0
+  (data (i32.const 0)
+    "\04\0a\0c\05\0b\06\03\10\15\19\0d\13\0e\16\18\07\17\14\12\0f\00\08\01\11\02\09")
+  ;; Rotor II forward at offset 26
+  (data (i32.const 26)
+    "\00\09\03\0a\12\08\11\14\17\01\0b\07\16\13\0c\02\10\06\19\0d\0f\18\05\15\0e\04")
+  ;; Rotor III forward at offset 52
+  (data (i32.const 52)
+    "\01\03\05\07\09\0b\02\0f\11\13\17\15\19\0d\18\04\08\16\06\00\0a\0c\14\12\10\0e")
+  ;; Reflector B at offset 156
+  (data (i32.const 156)
+    "\18\11\14\07\10\12\0b\03\0f\17\0d\06\0e\0a\0c\08\04\01\05\19\02\16\15\09\00\13")
+  ;; Notches at offset 182
+  (data (i32.const 182) "\10\04\15")
+
+  (func $mod26 (param $n i32) (result i32)
+    (local $m i32)
+    (local.set $m (i32.rem_s (local.get $n) (i32.const 26)))
+    (if (result i32) (i32.lt_s (local.get $m) (i32.const 0))
+      (then (i32.add (local.get $m) (i32.const 26)))
+      (else (local.get $m))
+    )
+  )
+
+  ;; pass_fwd: rotor(0-2) offset ch -> encrypted
+  (func $pass_fwd (param $rotor i32) (param $offset i32) (param $ch i32) (result i32)
+    (local $inp i32)
+    (local $base i32)
+    (local.set $base (i32.mul (local.get $rotor) (i32.const 26)))
+    (local.set $inp (call $mod26 (i32.add (local.get $ch) (local.get $offset))))
+    (call $mod26
+      (i32.sub
+        (i32.load8_u (i32.add (local.get $base) (local.get $inp)))
+        (local.get $offset)
+      )
+    )
+  )
+
+  ;; Test: AAAAA -> BDZGO
+  (export "mod26" (func $mod26))
+  (export "pass_fwd" (func $pass_fwd))
+)

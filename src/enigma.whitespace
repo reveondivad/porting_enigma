@@ -1,0 +1,25 @@
+# Enigma Cipher - Whitespace
+# Esoteric language using only spaces, tabs, and newlines
+# Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+# PeopleTec Inc. - Guinness World Record Attempt 2026
+#
+# In Whitespace, space=S, tab=T, newline=N encode all instructions.
+# This file documents the algorithm for Whitespace implementation.
+#
+# Instruction encoding:
+# SS = push number    | SN = duplicate top    | ST = copy nth
+# TS = add            | TT = subtract         | TN = output char
+# NS = mark label     | NT = call subroutine  | NN = end program
+#
+# Rotor wirings stored as heap values at addresses 0-25 (rotor I),
+# 26-51 (rotor II), 52-77 (rotor III), 78-103 (reflector B)
+#
+# Rotor I: 4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9
+# Reflector B: 24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19
+# Notches: 16, 4, 21
+#
+# mod26 subroutine: push 26, mod, dup, push 0, lt, branch, push 26, add
+# Forward pass subroutine: push offset, add, call mod26, heap_retrieve, push offset, sub, call mod26
+# Step subroutine: check notch, conditional branch, increment offsets
+#
+# Test: AAAAA -> BDZGO

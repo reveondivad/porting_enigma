@@ -1,0 +1,67 @@
+// Enigma cipher configuration in YANG (network config modeling)
+module enigma-cipher {
+    namespace "urn:enigma:cipher";
+    prefix enigma;
+
+    description "Wehrmacht Enigma I cipher YANG model";
+    revision 2024-01-01 { description "Initial version"; }
+
+    typedef rotor-position { type uint8 { range "0..25"; } }
+    typedef letter-index { type uint8 { range "0..25"; } }
+
+    grouping rotor-wiring {
+        leaf-list forward {
+            type letter-index;
+            min-elements 26;
+            max-elements 26;
+            ordered-by user;
+        }
+        leaf-list backward {
+            type letter-index;
+            min-elements 26;
+            max-elements 26;
+            ordered-by user;
+        }
+        leaf notch { type rotor-position; }
+    }
+
+    container enigma-config {
+        container rotor-i {
+            uses rotor-wiring;
+            description "Rotor I: EKMFLGDQVZNTOWYHXUSPAIBRCJ, notch at Q(16)";
+        }
+        container rotor-ii {
+            uses rotor-wiring;
+            description "Rotor II: AJDKSIRUXBLHWTMCQGZNPYFVOE, notch at E(4)";
+        }
+        container rotor-iii {
+            uses rotor-wiring;
+            description "Rotor III: BDFHJLCPRTXVZNYEIWGAKMUSQO, notch at V(21)";
+        }
+        leaf-list reflector-b {
+            type letter-index;
+            min-elements 26;
+            max-elements 26;
+            ordered-by user;
+            description "Reflector B: YRUHQSLDPXNGOKMIEBFZCWVJAT";
+        }
+    }
+
+    container enigma-state {
+        list rotor-positions {
+            key "slot";
+            leaf slot { type uint8 { range "0..2"; } }
+            leaf position { type rotor-position; default 0; }
+        }
+        list ring-settings {
+            key "slot";
+            leaf slot { type uint8 { range "0..2"; } }
+            leaf setting { type rotor-position; default 0; }
+        }
+    }
+
+    rpc encrypt {
+        input { leaf plaintext { type string; } }
+        output { leaf ciphertext { type string; } }
+    }
+}

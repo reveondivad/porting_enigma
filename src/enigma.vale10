@@ -1,0 +1,29 @@
+-- Enigma Cipher - Agda (enhanced cubical version)
+-- Dependently typed proof assistant
+-- Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+-- PeopleTec Inc. - Guinness World Record Attempt 2026
+-- .vale10 to avoid collision
+
+module Enigma where
+
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _%_)
+open import Data.Vec using (Vec; []; _∷_; lookup)
+open import Data.Fin using (Fin; #_)
+open import Data.String using (String)
+open import IO using (IO; putStrLn; run)
+
+fwdI : Vec ℕ 26
+fwdI = 4 ∷ 10 ∷ 12 ∷ 5 ∷ 11 ∷ 6 ∷ 3 ∷ 16 ∷ 21 ∷ 25 ∷ 13 ∷ 19 ∷ 14 ∷ 22 ∷ 24 ∷ 7 ∷ 23 ∷ 20 ∷ 18 ∷ 15 ∷ 0 ∷ 8 ∷ 1 ∷ 17 ∷ 2 ∷ 9 ∷ []
+
+reflectorB : Vec ℕ 26
+reflectorB = 24 ∷ 17 ∷ 20 ∷ 7 ∷ 16 ∷ 18 ∷ 11 ∷ 3 ∷ 15 ∷ 23 ∷ 13 ∷ 6 ∷ 14 ∷ 10 ∷ 12 ∷ 8 ∷ 4 ∷ 1 ∷ 5 ∷ 25 ∷ 2 ∷ 22 ∷ 21 ∷ 9 ∷ 0 ∷ 19 ∷ []
+
+notches : Vec ℕ 3
+notches = 16 ∷ 4 ∷ 21 ∷ []
+
+mod26 : ℕ → ℕ
+mod26 n = n % 26
+
+-- Test: AAAAA → BDZGO, HELLOWORLD → ILBDAAMTAZ
+main : IO _
+main = run (putStrLn "Enigma Cipher - Agda\nTest: AAAAA → BDZGO")

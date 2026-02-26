@@ -1,0 +1,102 @@
+// Enigma Cipher - V (Vlang)
+// Simple, fast compiled language inspired by Go
+// Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+// PeopleTec Inc. - Guinness World Record Attempt 2026
+// Note: .v2 to avoid collision with enigma.v (Verilog)
+
+import arrays
+
+const fwd = [
+    [u8(4),10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,23,20,18,15,0,8,1,17,2,9],
+    [u8(0),9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4],
+    [u8(1),3,5,7,9,11,2,15,17,19,23,21,25,13,24,4,8,22,6,0,10,12,20,18,16,14],
+]
+const bwd = [
+    [u8(20),22,24,6,0,3,5,15,21,25,1,4,2,10,12,19,7,23,18,11,17,8,13,16,14,9],
+    [u8(0),9,15,2,25,22,17,11,5,1,3,10,14,19,24,20,16,6,4,13,7,23,12,8,21,18],
+    [u8(19),0,6,1,15,2,18,3,16,4,20,5,21,13,25,7,24,8,23,9,22,11,17,10,14,12],
+]
+const ref_b = [u8(24),17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19]
+const notch = [u8(16), 4, 21]
+
+fn mod26(n int) int {
+    m := n % 26
+    if m < 0 { return m + 26 }
+    return m
+}
+
+struct Enigma {
+mut:
+    r [3]int
+    o [3]int
+    n1 int
+    n2 int
+}
+
+fn new_enigma(r0 int, r1 int, r2 int, k0 int, k1 int, k2 int) Enigma {
+    return Enigma{
+        r: [r0, r1, r2]!
+        o: [k0, k1, k2]!
+        n1: int(notch[r1])
+        n2: int(notch[r2])
+    }
+}
+
+fn (mut e Enigma) step() {
+    if e.o[1] == e.n1 {
+        e.o[1] = mod26(e.o[1] + 1)
+        e.o[0] = mod26(e.o[0] + 1)
+    } else if e.o[2] == e.n2 {
+        e.o[1] = mod26(e.o[1] + 1)
+    }
+    e.o[2] = mod26(e.o[2] + 1)
+}
+
+fn (mut e Enigma) fwd_pass(slot int, idx int) int {
+    c := mod26(idx + e.o[slot])
+    out := int(fwd[e.r[slot]][c])
+    return mod26(out - e.o[slot])
+}
+
+fn (mut e Enigma) bwd_pass(slot int, idx int) int {
+    c := mod26(idx + e.o[slot])
+    out := int(bwd[e.r[slot]][c])
+    return mod26(out - e.o[slot])
+}
+
+fn (mut e Enigma) press_key(ch int) int {
+    e.step()
+    mut c := ch
+    c = e.fwd_pass(2, c); c = e.fwd_pass(1, c); c = e.fwd_pass(0, c)
+    c = int(ref_b[c])
+    c = e.bwd_pass(0, c); c = e.bwd_pass(1, c); c = e.bwd_pass(2, c)
+    return c
+}
+
+fn (mut e Enigma) encrypt(msg string) string {
+    mut result := []u8{}
+    for ch in msg.bytes() {
+        enc := e.press_key(int(ch) - 65)
+        result << u8(enc + 65)
+    }
+    return result.bytestr()
+}
+
+fn main() {
+    println('Enigma Cipher - V (Vlang)')
+    tests := [
+        ['AAAAA', 'BDZGO'],
+        ['HELLOWORLD', 'ILBDAAMTAZ'],
+        ['ATTACKATDAWN', 'BZHGNOCRRTCM'],
+    ]
+    for i, t in tests {
+        mut e := new_enigma(0, 1, 2, 0, 0, 0)
+        res := e.encrypt(t[0])
+        ok := if res == t[1] { '[PASS]' } else { '[FAIL]' }
+        println('Test ${i+1}: ${res} ${ok}')
+    }
+    mut e4 := new_enigma(0, 1, 2, 12, 2, 10)
+    println('Test 4: ${e4.encrypt("HELLOWORLD")} expected DLTBBQVPQV')
+    mut e5 := new_enigma(2, 0, 1, 0, 0, 0)
+    println('Test 5: ${e5.encrypt("HELLOWORLD")} expected KZHDFQYHXT')
+}
