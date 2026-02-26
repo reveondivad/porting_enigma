@@ -1,0 +1,68 @@
+Scriptname EnigmaCipher extends ObjectReference
+{Enigma cipher in Papyrus (Skyrim/Fallout scripting)}
+
+Int[] Property RotorFwd1 Auto
+Int[] Property RotorFwd2 Auto
+Int[] Property RotorFwd3 Auto
+Int[] Property RotorBwd1 Auto
+Int[] Property RotorBwd2 Auto
+Int[] Property RotorBwd3 Auto
+Int[] Property Reflector Auto
+Int[] Property Notches Auto
+Int[] Property Pos Auto
+
+Event OnInit()
+  RotorFwd1 = new Int[26]
+  RotorFwd1[0] = 4; RotorFwd1[1] = 10; RotorFwd1[2] = 12; RotorFwd1[3] = 5
+  RotorFwd1[4] = 11; RotorFwd1[5] = 6; RotorFwd1[6] = 3; RotorFwd1[7] = 16
+  RotorFwd1[8] = 21; RotorFwd1[9] = 25; RotorFwd1[10] = 13; RotorFwd1[11] = 19
+  RotorFwd1[12] = 14; RotorFwd1[13] = 22; RotorFwd1[14] = 24; RotorFwd1[15] = 7
+  RotorFwd1[16] = 23; RotorFwd1[17] = 20; RotorFwd1[18] = 18; RotorFwd1[19] = 15
+  RotorFwd1[20] = 0; RotorFwd1[21] = 8; RotorFwd1[22] = 1; RotorFwd1[23] = 17
+  RotorFwd1[24] = 2; RotorFwd1[25] = 9
+  Reflector = new Int[26]
+  Reflector[0] = 24; Reflector[1] = 17; Reflector[2] = 20; Reflector[3] = 7
+  Reflector[4] = 16; Reflector[5] = 18; Reflector[6] = 11; Reflector[7] = 3
+  Reflector[8] = 15; Reflector[9] = 23; Reflector[10] = 13; Reflector[11] = 6
+  Reflector[12] = 14; Reflector[13] = 10; Reflector[14] = 12; Reflector[15] = 8
+  Reflector[16] = 4; Reflector[17] = 1; Reflector[18] = 5; Reflector[19] = 25
+  Reflector[20] = 2; Reflector[21] = 22; Reflector[22] = 21; Reflector[23] = 9
+  Reflector[24] = 0; Reflector[25] = 19
+  Notches = new Int[3]
+  Notches[0] = 16; Notches[1] = 4; Notches[2] = 21
+  Pos = new Int[3]
+  Debug.Notification("Enigma initialized")
+EndEvent
+
+Int Function Mod26(Int n)
+  Int m = n % 26
+  If m < 0
+    m += 26
+  EndIf
+  Return m
+EndFunction
+
+String Function Encrypt(String text)
+  Pos[0] = 0; Pos[1] = 0; Pos[2] = 0
+  String result = ""
+  Int i = 0
+  While i < StringUtil.GetLength(text)
+    Int c = StringUtil.AsOrd(StringUtil.GetNthChar(text, i)) - 65
+    If c >= 0 && c < 26
+      ; Step rotors
+      Bool mid = Pos[1] == Notches[1]
+      If Pos[2] == Notches[2]
+        Pos[2] = Mod26(Pos[2] + 1)
+      EndIf
+      If mid || Pos[2] == Notches[2]
+        Pos[1] = Mod26(Pos[1] + 1)
+      EndIf
+      Pos[2] = Mod26(Pos[2] + 1)
+      c = Mod26(RotorFwd1[Mod26(c + Pos[0])] - Pos[0])
+      c = Reflector[c]
+      result += StringUtil.AsChar(c + 65)
+    EndIf
+    i += 1
+  EndWhile
+  Return result
+EndFunction

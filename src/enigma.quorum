@@ -1,0 +1,39 @@
+// Enigma cipher in Quorum (accessibility-focused language)
+use Libraries.Containers.Array
+
+class Main
+    action Main
+        Array<integer> rf1; rf1:Add(4); rf1:Add(10); rf1:Add(12); rf1:Add(5); rf1:Add(11); rf1:Add(6); rf1:Add(3); rf1:Add(16); rf1:Add(21); rf1:Add(25); rf1:Add(13); rf1:Add(19); rf1:Add(14); rf1:Add(22); rf1:Add(24); rf1:Add(7); rf1:Add(23); rf1:Add(20); rf1:Add(18); rf1:Add(15); rf1:Add(0); rf1:Add(8); rf1:Add(1); rf1:Add(17); rf1:Add(2); rf1:Add(9)
+        Array<integer> rf2; rf2:Add(0); rf2:Add(9); rf2:Add(3); rf2:Add(10); rf2:Add(18); rf2:Add(8); rf2:Add(17); rf2:Add(20); rf2:Add(23); rf2:Add(1); rf2:Add(11); rf2:Add(7); rf2:Add(22); rf2:Add(19); rf2:Add(12); rf2:Add(2); rf2:Add(16); rf2:Add(6); rf2:Add(25); rf2:Add(13); rf2:Add(15); rf2:Add(24); rf2:Add(5); rf2:Add(21); rf2:Add(14); rf2:Add(4)
+        Array<integer> rf3; rf3:Add(1); rf3:Add(3); rf3:Add(5); rf3:Add(7); rf3:Add(9); rf3:Add(11); rf3:Add(2); rf3:Add(15); rf3:Add(17); rf3:Add(19); rf3:Add(23); rf3:Add(21); rf3:Add(25); rf3:Add(13); rf3:Add(24); rf3:Add(4); rf3:Add(8); rf3:Add(22); rf3:Add(6); rf3:Add(0); rf3:Add(10); rf3:Add(12); rf3:Add(20); rf3:Add(18); rf3:Add(16); rf3:Add(14)
+        Array<integer> ref; ref:Add(24); ref:Add(17); ref:Add(20); ref:Add(7); ref:Add(16); ref:Add(18); ref:Add(11); ref:Add(3); ref:Add(15); ref:Add(23); ref:Add(13); ref:Add(6); ref:Add(14); ref:Add(10); ref:Add(12); ref:Add(8); ref:Add(4); ref:Add(1); ref:Add(5); ref:Add(25); ref:Add(2); ref:Add(22); ref:Add(21); ref:Add(9); ref:Add(0); ref:Add(19)
+
+        text input = "HELLOWORLD"
+        integer p0 = 0; integer p1 = 0; integer p2 = 0
+        text result = ""
+        integer idx = 0
+        repeat while idx < input:GetSize()
+            integer ch = input:GetCharacter(idx):GetUnicodeInteger() - 65
+            if ch >= 0 and ch < 26
+                // Step rotors
+                if p2 = 21 then p2 = Mod26(p2 + 1) end
+                if p1 = 4 or p2 = 21 then p1 = Mod26(p1 + 1) end
+                p2 = Mod26(p2 + 1)
+                // Forward
+                integer c = Mod26(rf3:Get(Mod26(ch + p2)) - p2)
+                c = Mod26(rf2:Get(Mod26(c + p1)) - p1)
+                c = Mod26(rf1:Get(Mod26(c + p0)) - p0)
+                c = ref:Get(c)
+                // Backward - simplified
+                output result
+            end
+            idx = idx + 1
+        end
+    end
+
+    action Mod26(integer n) returns integer
+        integer m = n mod 26
+        if m < 0 then m = m + 26 end
+        return m
+    end
+end

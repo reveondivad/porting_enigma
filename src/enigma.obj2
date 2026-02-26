@@ -1,0 +1,87 @@
+(* Enigma Cipher - Objective Caml (enhanced module style) *)
+(* Note: .obj2 to avoid OCaml collision with .ml *)
+(* Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping *)
+(* PeopleTec Inc. - Guinness World Record Attempt 2026 *)
+(* This uses OCaml's object system for Enigma implementation *)
+
+class enigma (r0:int) (r1:int) (r2:int) (k0:int) (k1:int) (k2:int) = object (self)
+  val fwd_i  = [|4;10;12;5;11;6;3;16;21;25;13;19;14;22;24;7;23;20;18;15;0;8;1;17;2;9|]
+  val fwd_ii = [|0;9;3;10;18;8;17;20;23;1;11;7;22;19;12;2;16;6;25;13;15;24;5;21;14;4|]
+  val fwd_iii= [|1;3;5;7;9;11;2;15;17;19;23;21;25;13;24;4;8;22;6;0;10;12;20;18;16;14|]
+  val bwd_i  = [|20;22;24;6;0;3;5;15;21;25;1;4;2;10;12;19;7;23;18;11;17;8;13;16;14;9|]
+  val bwd_ii = [|0;9;15;2;25;22;17;11;5;1;3;10;14;19;24;20;16;6;4;13;7;23;12;8;21;18|]
+  val bwd_iii= [|19;0;6;1;15;2;18;3;16;4;20;5;21;13;25;7;24;8;23;9;22;11;17;10;14;12|]
+  val ref_b  = [|24;17;20;7;16;18;11;3;15;23;13;6;14;10;12;8;4;1;5;25;2;22;21;9;0;19|]
+  val notch_pos = [|16; 4; 21|]
+
+  val r = [|r0; r1; r2|]
+  val o = [|k0; k1; k2|]
+  val mutable n1 = 0
+  val mutable n2 = 0
+
+  initializer
+    n1 <- notch_pos.(r1);
+    n2 <- notch_pos.(r2)
+
+  method private mod26 n =
+    let m = n mod 26 in
+    if m < 0 then m + 26 else m
+
+  method private get_fwd ri idx =
+    (match ri with 0 -> fwd_i | 1 -> fwd_ii | _ -> fwd_iii).(idx)
+
+  method private get_bwd ri idx =
+    (match ri with 0 -> bwd_i | 1 -> bwd_ii | _ -> bwd_iii).(idx)
+
+  method private pass_fwd rotor offset ch =
+    let inp = self#mod26 (ch + offset) in
+    let out = self#get_fwd rotor inp in
+    self#mod26 (out - offset)
+
+  method private pass_bwd rotor offset ch =
+    let inp = self#mod26 (ch + offset) in
+    let out = self#get_bwd rotor inp in
+    self#mod26 (out - offset)
+
+  method private step =
+    if o.(1) = n1 then begin
+      o.(1) <- self#mod26 (o.(1) + 1);
+      o.(0) <- self#mod26 (o.(0) + 1)
+    end else if o.(2) = n2 then
+      o.(1) <- self#mod26 (o.(1) + 1);
+    o.(2) <- self#mod26 (o.(2) + 1)
+
+  method press_key ch =
+    self#step;
+    let c = ref ch in
+    c := self#pass_fwd r.(2) o.(2) !c;
+    c := self#pass_fwd r.(1) o.(1) !c;
+    c := self#pass_fwd r.(0) o.(0) !c;
+    c := ref_b.(!c);
+    c := self#pass_bwd r.(0) o.(0) !c;
+    c := self#pass_bwd r.(1) o.(1) !c;
+    c := self#pass_bwd r.(2) o.(2) !c;
+    !c
+
+  method encrypt msg =
+    let len = String.length msg in
+    let buf = Buffer.create len in
+    for i = 0 to len - 1 do
+      let ch = Char.code msg.[i] - 65 in
+      Buffer.add_char buf (Char.chr (self#press_key ch + 65))
+    done;
+    Buffer.contents buf
+end
+
+let () =
+  print_endline "Enigma Cipher - OCaml Objects";
+  let e = new enigma 0 1 2 0 0 0 in
+  Printf.printf "Test 1: %s expected BDZGO\n" (e#encrypt "AAAAA");
+  let e2 = new enigma 0 1 2 0 0 0 in
+  Printf.printf "Test 2: %s expected ILBDAAMTAZ\n" (e2#encrypt "HELLOWORLD");
+  let e3 = new enigma 0 1 2 0 0 0 in
+  Printf.printf "Test 3: %s expected BZHGNOCRRTCM\n" (e3#encrypt "ATTACKATDAWN");
+  let e4 = new enigma 0 1 2 12 2 10 in
+  Printf.printf "Test 4: %s expected DLTBBQVPQV\n" (e4#encrypt "HELLOWORLD");
+  let e5 = new enigma 2 0 1 0 0 0 in
+  Printf.printf "Test 5: %s expected KZHDFQYHXT\n" (e5#encrypt "HELLOWORLD")

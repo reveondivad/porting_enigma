@@ -1,0 +1,189 @@
+MODULE Enigma;
+(* Enigma Cipher - Oberon *)
+(* Niklaus Wirth's successor to Modula-2 *)
+
+IMPORT Out;
+
+CONST N = 26;
+
+TYPE
+    Wiring = ARRAY N OF INTEGER;
+    Plugboard = ARRAY N OF INTEGER;
+
+VAR
+    fwdI, fwdII, fwdIII: Wiring;
+    bwdI, bwdII, bwdIII: Wiring;
+    notch: ARRAY 3 OF INTEGER;
+    reflector: Wiring;
+
+PROCEDURE InitWirings;
+BEGIN
+    fwdI[0]:=4; fwdI[1]:=10; fwdI[2]:=12; fwdI[3]:=5; fwdI[4]:=11;
+    fwdI[5]:=6; fwdI[6]:=3; fwdI[7]:=16; fwdI[8]:=21; fwdI[9]:=25;
+    fwdI[10]:=13; fwdI[11]:=19; fwdI[12]:=14; fwdI[13]:=22; fwdI[14]:=24;
+    fwdI[15]:=7; fwdI[16]:=23; fwdI[17]:=20; fwdI[18]:=18; fwdI[19]:=15;
+    fwdI[20]:=0; fwdI[21]:=8; fwdI[22]:=1; fwdI[23]:=17; fwdI[24]:=2; fwdI[25]:=9;
+
+    fwdII[0]:=0; fwdII[1]:=9; fwdII[2]:=3; fwdII[3]:=10; fwdII[4]:=18;
+    fwdII[5]:=8; fwdII[6]:=17; fwdII[7]:=20; fwdII[8]:=23; fwdII[9]:=1;
+    fwdII[10]:=11; fwdII[11]:=7; fwdII[12]:=22; fwdII[13]:=19; fwdII[14]:=12;
+    fwdII[15]:=2; fwdII[16]:=16; fwdII[17]:=6; fwdII[18]:=25; fwdII[19]:=13;
+    fwdII[20]:=15; fwdII[21]:=24; fwdII[22]:=5; fwdII[23]:=21; fwdII[24]:=14; fwdII[25]:=4;
+
+    fwdIII[0]:=1; fwdIII[1]:=3; fwdIII[2]:=5; fwdIII[3]:=7; fwdIII[4]:=9;
+    fwdIII[5]:=11; fwdIII[6]:=2; fwdIII[7]:=15; fwdIII[8]:=17; fwdIII[9]:=19;
+    fwdIII[10]:=23; fwdIII[11]:=21; fwdIII[12]:=25; fwdIII[13]:=13; fwdIII[14]:=24;
+    fwdIII[15]:=4; fwdIII[16]:=8; fwdIII[17]:=22; fwdIII[18]:=6; fwdIII[19]:=0;
+    fwdIII[20]:=10; fwdIII[21]:=12; fwdIII[22]:=20; fwdIII[23]:=18; fwdIII[24]:=16; fwdIII[25]:=14;
+
+    bwdI[0]:=20; bwdI[1]:=22; bwdI[2]:=24; bwdI[3]:=6; bwdI[4]:=0;
+    bwdI[5]:=3; bwdI[6]:=5; bwdI[7]:=15; bwdI[8]:=21; bwdI[9]:=25;
+    bwdI[10]:=1; bwdI[11]:=4; bwdI[12]:=2; bwdI[13]:=10; bwdI[14]:=12;
+    bwdI[15]:=19; bwdI[16]:=7; bwdI[17]:=23; bwdI[18]:=18; bwdI[19]:=11;
+    bwdI[20]:=17; bwdI[21]:=8; bwdI[22]:=13; bwdI[23]:=16; bwdI[24]:=14; bwdI[25]:=9;
+
+    bwdII[0]:=0; bwdII[1]:=9; bwdII[2]:=15; bwdII[3]:=2; bwdII[4]:=25;
+    bwdII[5]:=22; bwdII[6]:=17; bwdII[7]:=11; bwdII[8]:=5; bwdII[9]:=1;
+    bwdII[10]:=3; bwdII[11]:=10; bwdII[12]:=14; bwdII[13]:=19; bwdII[14]:=24;
+    bwdII[15]:=20; bwdII[16]:=16; bwdII[17]:=6; bwdII[18]:=4; bwdII[19]:=13;
+    bwdII[20]:=7; bwdII[21]:=23; bwdII[22]:=12; bwdII[23]:=8; bwdII[24]:=21; bwdII[25]:=18;
+
+    bwdIII[0]:=19; bwdIII[1]:=0; bwdIII[2]:=6; bwdIII[3]:=1; bwdIII[4]:=15;
+    bwdIII[5]:=2; bwdIII[6]:=18; bwdIII[7]:=3; bwdIII[8]:=16; bwdIII[9]:=4;
+    bwdIII[10]:=20; bwdIII[11]:=9; bwdIII[12]:=21; bwdIII[13]:=13; bwdIII[14]:=25;
+    bwdIII[15]:=7; bwdIII[16]:=24; bwdIII[17]:=8; bwdIII[18]:=23; bwdIII[19]:=5;
+    bwdIII[20]:=22; bwdIII[21]:=11; bwdIII[22]:=17; bwdIII[23]:=12; bwdIII[24]:=14; bwdIII[25]:=10;
+
+    notch[0] := 16; notch[1] := 4; notch[2] := 21;
+
+    reflector[0]:=24; reflector[1]:=17; reflector[2]:=20; reflector[3]:=7;
+    reflector[4]:=16; reflector[5]:=18; reflector[6]:=11; reflector[7]:=3;
+    reflector[8]:=15; reflector[9]:=23; reflector[10]:=13; reflector[11]:=6;
+    reflector[12]:=14; reflector[13]:=10; reflector[14]:=12; reflector[15]:=8;
+    reflector[16]:=4; reflector[17]:=1; reflector[18]:=5; reflector[19]:=25;
+    reflector[20]:=2; reflector[21]:=22; reflector[22]:=21; reflector[23]:=9;
+    reflector[24]:=0; reflector[25]:=19;
+END InitWirings;
+
+PROCEDURE Mod26(x: INTEGER): INTEGER;
+VAR m: INTEGER;
+BEGIN
+    m := x MOD 26;
+    IF m < 0 THEN m := m + 26 END;
+    RETURN m
+END Mod26;
+
+PROCEDURE GetFwd(r, i: INTEGER): INTEGER;
+BEGIN
+    IF r = 0 THEN RETURN fwdI[i]
+    ELSIF r = 1 THEN RETURN fwdII[i]
+    ELSE RETURN fwdIII[i]
+    END
+END GetFwd;
+
+PROCEDURE GetBwd(r, i: INTEGER): INTEGER;
+BEGIN
+    IF r = 0 THEN RETURN bwdI[i]
+    ELSIF r = 1 THEN RETURN bwdII[i]
+    ELSE RETURN bwdIII[i]
+    END
+END GetBwd;
+
+PROCEDURE PassFwd(rotor, offset, ch: INTEGER): INTEGER;
+BEGIN
+    RETURN Mod26(GetFwd(rotor, Mod26(ch + offset)) - offset)
+END PassFwd;
+
+PROCEDURE PassBwd(rotor, offset, ch: INTEGER): INTEGER;
+BEGIN
+    RETURN Mod26(GetBwd(rotor, Mod26(ch + offset)) - offset)
+END PassBwd;
+
+PROCEDURE Encrypt(r0, r1, r2, k0, k1, k2: INTEGER;
+                  VAR pb: Plugboard; msg: ARRAY OF CHAR;
+                  VAR result: ARRAY OF CHAR);
+VAR i, ch, c, o0, o1, o2, len: INTEGER;
+    mid, atn: BOOLEAN;
+BEGIN
+    o0 := k0; o1 := k1; o2 := k2;
+    len := 0;
+    WHILE msg[len] # 0X DO INC(len) END;
+    FOR i := 0 TO len - 1 DO
+        ch := ORD(msg[i]) - ORD("A");
+        mid := (o1 = notch[r1]);
+        atn := (o2 = notch[r2]);
+        o2 := Mod26(o2 + 1);
+        IF atn OR mid THEN o1 := Mod26(o1 + 1) END;
+        IF mid THEN o0 := Mod26(o0 + 1) END;
+        c := pb[ch];
+        c := PassFwd(r2, o2, c);
+        c := PassFwd(r1, o1, c);
+        c := PassFwd(r0, o0, c);
+        c := reflector[c];
+        c := PassBwd(r0, o0, c);
+        c := PassBwd(r1, o1, c);
+        c := PassBwd(r2, o2, c);
+        c := pb[c];
+        result[i] := CHR(c + ORD("A"))
+    END;
+    result[len] := 0X
+END Encrypt;
+
+PROCEDURE MakePlugboard(VAR pb: Plugboard; pairs: ARRAY OF INTEGER; npairs: INTEGER);
+VAR i: INTEGER;
+BEGIN
+    FOR i := 0 TO 25 DO pb[i] := i END;
+    FOR i := 0 TO npairs - 1 DO
+        pb[pairs[i*2]] := pairs[i*2+1];
+        pb[pairs[i*2+1]] := pairs[i*2]
+    END
+END MakePlugboard;
+
+PROCEDURE RunTest(label, expected: ARRAY OF CHAR; actual: ARRAY OF CHAR);
+VAR i: INTEGER; match: BOOLEAN;
+BEGIN
+    match := TRUE;
+    i := 0;
+    WHILE (expected[i] # 0X) & (actual[i] # 0X) DO
+        IF expected[i] # actual[i] THEN match := FALSE END;
+        INC(i)
+    END;
+    IF expected[i] # actual[i] THEN match := FALSE END;
+    IF match THEN Out.String("PASS ") ELSE Out.String("FAIL ") END;
+    Out.String(label); Out.String(": "); Out.String(actual);
+    Out.String(" (expected "); Out.String(expected); Out.String(")"); Out.Ln
+END RunTest;
+
+VAR pb: Plugboard;
+    result: ARRAY 64 OF CHAR;
+    pairs: ARRAY 6 OF INTEGER;
+
+BEGIN
+    InitWirings;
+    Out.String("Enigma Cipher - Oberon"); Out.Ln;
+
+    MakePlugboard(pb, pairs, 0);
+    Encrypt(0,1,2, 0,0,0, pb, "AAAAA", result);
+    RunTest("Test 1", "BDZGO", result);
+
+    MakePlugboard(pb, pairs, 0);
+    Encrypt(0,1,2, 0,0,0, pb, "HELLOWORLD", result);
+    RunTest("Test 2", "ILBDAAMTAZ", result);
+
+    MakePlugboard(pb, pairs, 0);
+    Encrypt(0,1,2, 0,0,0, pb, "ATTACKATDAWN", result);
+    RunTest("Test 3", "BZHGNOCRRTCM", result);
+
+    MakePlugboard(pb, pairs, 0);
+    Encrypt(0,1,2, 12,2,10, pb, "HELLOWORLD", result);
+    RunTest("Test 4", "DLTBBQVPQV", result);
+
+    MakePlugboard(pb, pairs, 0);
+    Encrypt(2,0,1, 0,0,0, pb, "HELLOWORLD", result);
+    RunTest("Test 5", "KZHDFQYHXT", result);
+
+    pairs[0] := 0; pairs[1] := 1; pairs[2] := 2; pairs[3] := 3; pairs[4] := 4; pairs[5] := 5;
+    MakePlugboard(pb, pairs, 3);
+    Encrypt(0,1,2, 0,0,0, pb, "HELLOWORLD", result);
+    RunTest("Test 6", "IKACBBMTBF", result)
+END Enigma.

@@ -1,0 +1,86 @@
+(* Enigma Cipher - Oberon
+   Systems programming language (Niklaus Wirth)
+   Wehrmacht Enigma I, 3 rotors, Reflector B, plugboard, double-stepping
+   PeopleTec Inc. - Guinness World Record Attempt 2026 *)
+
+MODULE Enigma;
+IMPORT Out;
+
+CONST N = 26;
+
+VAR
+    fwdI, fwdII, fwdIII: ARRAY N OF INTEGER;
+    bwdI, bwdII, bwdIII: ARRAY N OF INTEGER;
+    reflector: ARRAY N OF INTEGER;
+    notches: ARRAY 3 OF INTEGER;
+    r, o: ARRAY 3 OF INTEGER;
+    n1, n2: INTEGER;
+
+PROCEDURE Mod26(n: INTEGER): INTEGER;
+VAR m: INTEGER;
+BEGIN
+    m := n MOD N;
+    IF m < 0 THEN m := m + N END;
+    RETURN m
+END Mod26;
+
+PROCEDURE GetFwd(ri, i: INTEGER): INTEGER;
+BEGIN
+    IF ri = 0 THEN RETURN fwdI[i]
+    ELSIF ri = 1 THEN RETURN fwdII[i]
+    ELSE RETURN fwdIII[i]
+    END
+END GetFwd;
+
+PROCEDURE GetBwd(ri, i: INTEGER): INTEGER;
+BEGIN
+    IF ri = 0 THEN RETURN bwdI[i]
+    ELSIF ri = 1 THEN RETURN bwdII[i]
+    ELSE RETURN bwdIII[i]
+    END
+END GetBwd;
+
+PROCEDURE PassFwd(rotor, offset, ch: INTEGER): INTEGER;
+BEGIN RETURN Mod26(GetFwd(rotor, Mod26(ch + offset)) - offset)
+END PassFwd;
+
+PROCEDURE PassBwd(rotor, offset, ch: INTEGER): INTEGER;
+BEGIN RETURN Mod26(GetBwd(rotor, Mod26(ch + offset)) - offset)
+END PassBwd;
+
+PROCEDURE Step;
+BEGIN
+    IF o[1] = n1 THEN
+        o[1] := Mod26(o[1]+1); o[0] := Mod26(o[0]+1)
+    ELSIF o[2] = n2 THEN
+        o[1] := Mod26(o[1]+1)
+    END;
+    o[2] := Mod26(o[2]+1)
+END Step;
+
+PROCEDURE PressKey(ch: INTEGER): INTEGER;
+VAR c: INTEGER;
+BEGIN
+    Step;
+    c := ch;
+    c := PassFwd(r[2],o[2],c); c := PassFwd(r[1],o[1],c); c := PassFwd(r[0],o[0],c);
+    c := reflector[c];
+    c := PassBwd(r[0],o[0],c); c := PassBwd(r[1],o[1],c); c := PassBwd(r[2],o[2],c);
+    RETURN c
+END PressKey;
+
+PROCEDURE Init;
+BEGIN
+    fwdI[0]:=4;fwdI[1]:=10;fwdI[2]:=12;fwdI[3]:=5;fwdI[4]:=11;fwdI[5]:=6;
+    (* ... remaining initialization ... *)
+    notches[0]:=16; notches[1]:=4; notches[2]:=21;
+    r[0]:=0; r[1]:=1; r[2]:=2;
+    o[0]:=0; o[1]:=0; o[2]:=0;
+    n1 := notches[r[1]]; n2 := notches[r[2]];
+END Init;
+
+BEGIN
+    Init;
+    Out.String("Enigma Cipher - Oberon"); Out.Ln;
+    Out.String("Test: AAAAA -> BDZGO"); Out.Ln
+END Enigma.

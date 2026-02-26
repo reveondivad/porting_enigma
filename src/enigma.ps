@@ -1,0 +1,163 @@
+%!PS-Adobe-3.0
+% Enigma Machine - PostScript Implementation
+% Wehrmacht Enigma I (3-rotor, Reflector B, plugboard, double-stepping)
+% PeopleTec Inc. - Guinness World Record Attempt 2026
+
+/fwd0 (EKMFLGDQVZNTOWYHXUSPAIBRCJ) def
+/fwd1 (AJDKSIRUXBLHWTMCQGZNPYFVOE) def
+/fwd2 (BDFHJLCPRTXVZNYEIWGAKMUSQO) def
+/bwd0 (UWYGADFPVZBECKMTHXSLRINQOJ) def
+/bwd1 (AJPCZWRLFBDKOTYUQGENHXMIVS) def
+/bwd2 (TAGBPCSDQEUFVNZHYIXJWLRKOM) def
+/notch0 16 def /notch1 4 def /notch2 21 def
+/refl (YRUHQSLDPXNGOKMIEBFZCWVJAT) def
+
+/mod26 { 26 mod 26 add 26 mod } def
+/c2i { 65 sub } def
+/i2c { 65 add } def
+
+% State
+/l_off 0 def /m_off 0 def /r_off 0 def
+/l_notch 0 def /m_notch 0 def /r_notch 0 def
+/l_fwd fwd0 def /l_bwd bwd0 def
+/m_fwd fwd1 def /m_bwd bwd1 def
+/r_fwd fwd2 def /r_bwd bwd2 def
+/plug 26 array def
+0 1 25 { dup plug exch 2 index put pop } for
+
+/init_enigma { % rotors key plugboard
+    /plugboard exch def
+    /key exch def
+    /rotors exch def
+
+    % Set up left rotor
+    rotors 0 get dup dup
+    0 eq { /l_fwd fwd0 def /l_bwd bwd0 def /l_notch notch0 def } if
+    1 eq { /l_fwd fwd1 def /l_bwd bwd1 def /l_notch notch1 def } if
+    2 eq { /l_fwd fwd2 def /l_bwd bwd2 def /l_notch notch2 def } if
+
+    rotors 1 get dup dup
+    0 eq { /m_fwd fwd0 def /m_bwd bwd0 def /m_notch notch0 def } if
+    1 eq { /m_fwd fwd1 def /m_bwd bwd1 def /m_notch notch1 def } if
+    2 eq { /m_fwd fwd2 def /m_bwd bwd2 def /m_notch notch2 def } if
+
+    rotors 2 get dup dup
+    0 eq { /r_fwd fwd0 def /r_bwd bwd0 def /r_notch notch0 def } if
+    1 eq { /r_fwd fwd1 def /r_bwd bwd1 def /r_notch notch1 def } if
+    2 eq { /r_fwd fwd2 def /r_bwd bwd2 def /r_notch notch2 def } if
+
+    /l_off key 0 get c2i def
+    /m_off key 1 get c2i def
+    /r_off key 2 get c2i def
+
+    0 1 25 { dup plug exch 2 index put pop } for
+    plugboard length 0 gt {
+        0 2 plugboard length 1 sub {
+            /pi exch def
+            plugboard pi get c2i /pa exch def
+            plugboard pi 1 add get c2i /pb exch def
+            plug pa pb put
+            plug pb pa put
+        } for
+    } if
+} def
+
+/step_rotors {
+    m_off m_notch eq {
+        /m_off m_off 1 add 26 mod def
+        /l_off l_off 1 add 26 mod def
+    } {
+        r_off r_notch eq {
+            /m_off m_off 1 add 26 mod def
+        } if
+    } ifelse
+    /r_off r_off 1 add 26 mod def
+} def
+
+/fwd_pass { % wiring off idx -> result
+    /idx exch def /off exch def /wiring exch def
+    idx off add mod26 /contact exch def
+    wiring contact get c2i off sub mod26
+} def
+
+/bwd_pass { % wiring off idx -> result
+    /idx exch def /off exch def /wiring exch def
+    idx off add mod26 /contact exch def
+    wiring contact get c2i off sub mod26
+} def
+
+/press_key { % char_code -> char_code
+    step_rotors
+    c2i
+    plug exch get
+    r_fwd r_off 3 -1 roll fwd_pass
+    m_fwd m_off 3 -1 roll fwd_pass
+    l_fwd l_off 3 -1 roll fwd_pass
+    refl exch get c2i
+    l_bwd l_off 3 -1 roll bwd_pass
+    m_bwd m_off 3 -1 roll bwd_pass
+    r_bwd r_off 3 -1 roll bwd_pass
+    plug exch get
+    i2c
+} def
+
+/encrypt { % (text) -> (cipher)
+    /text exch def
+    /result () def
+    0 1 text length 1 sub {
+        text exch get
+        dup 97 ge 1 index 122 le and { 32 sub } if
+        dup 65 ge 1 index 90 le and {
+            press_key
+            ( ) dup 0 4 -1 roll put
+            result exch concatstrings /result exch def
+        } { pop } ifelse
+    } for
+    result
+} def
+
+% Output
+/Courier findfont 10 scalefont setfont
+/ypos 750 def
+/println { /ypos ypos 14 sub def 50 ypos moveto show } def
+
+(Enigma Machine - PostScript Implementation) println
+(=======================================) println
+
+% Test 1
+[0 1 2] (AAA) () init_enigma
+(AAAAA) encrypt /c1 exch def
+(  Test 1: AAAAA -> ) c1 concatstrings
+c1 (BDZGO) eq { ( [PASS]) } { ( [FAIL]) } ifelse concatstrings println
+
+% Test 2
+[0 1 2] (AAA) () init_enigma
+(HELLOWORLD) encrypt /c2 exch def
+(  Test 2: HELLOWORLD -> ) c2 concatstrings
+c2 (ILBDAAMTAZ) eq { ( [PASS]) } { ( [FAIL]) } ifelse concatstrings println
+
+% Test 3
+[0 1 2] (AAA) () init_enigma
+(ATTACKATDAWN) encrypt /c3 exch def
+(  Test 3: ATTACKATDAWN -> ) c3 concatstrings
+c3 (BZHGNOCRRTCM) eq { ( [PASS]) } { ( [FAIL]) } ifelse concatstrings println
+
+% Test 4
+[0 1 2] (MCK) () init_enigma
+(HELLOWORLD) encrypt /c4 exch def
+(  Test 4: HELLOWORLD -> ) c4 concatstrings
+c4 (DLTBBQVPQV) eq { ( [PASS]) } { ( [FAIL]) } ifelse concatstrings println
+
+% Test 5
+[2 0 1] (AAA) () init_enigma
+(HELLOWORLD) encrypt /c5 exch def
+(  Test 5: HELLOWORLD -> ) c5 concatstrings
+c5 (KZHDFQYHXT) eq { ( [PASS]) } { ( [FAIL]) } ifelse concatstrings println
+
+% Test 6
+[0 1 2] (AAA) (ABCDEF) init_enigma
+(HELLOWORLD) encrypt /c6 exch def
+(  Test 6: HELLOWORLD -> ) c6 concatstrings
+c6 (IKACBBMTBF) eq { ( [PASS]) } { ( [FAIL]) } ifelse concatstrings println
+
+showpage
